@@ -8,7 +8,7 @@
 >
 > **Decisão do Pivot:** [ADR-004](../vibe/decisions/ADR-004-pivot-mmorpg-servidor-go.md)
 >
-> **Última atualização:** 2026-03-11
+> **Última atualização:** 2026-03-15
 
 ---
 
@@ -383,6 +383,30 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 
 ---
 
+## 🎮 Game Feel (Transversal — não bloqueiam o loop, mas precisam existir antes de qualquer apresentação)
+
+| # | Entrega | Critério de Aceite | Fase |
+|---|---------|-------------------|------|
+| GF.1 | Loading/transição de tela | Feedback visual ao mover entre blocos (spinner, texto de viagem) | 2+ |
+| GF.2 | Tutorial/onboarding em texto | Jogador novo aprende D20, movimento e combate nos primeiros 5 minutos | 3 |
+| GF.3 | Tela inicial + configurações web | Página de entrada com opção de nova partida, continuar e ajustes | 3+ |
+| GF.4 | Sistema de áudio (Web Audio API) | Música de fundo, SFX de ação e sons de ambientação | 4+ |
+| GF.5 | Acessibilidade web | Alto contraste, tamanho de fonte ajustável, navegação por teclado | 5+ |
+| GF.6 | i18n — strings separadas do código | Arquivo de strings que permite tradução futura sem reescrever código | 5+ |
+
+### ✅ Checklist Game Feel
+
+- [ ] GF.1 — Loading/transição entre blocos
+- [ ] GF.2 — Tutorial em texto (Fase 3)
+- [ ] GF.3 — Tela inicial + configurações
+- [ ] GF.4 — Sistema de áudio Web
+- [ ] GF.5 — Acessibilidade (contraste, fonte, teclado)
+- [ ] GF.6 — i18n (strings externalizadas)
+
+> Design do tutorial (flow e conteúdo): ver GDD BACKLOG — "Precisa para Fase 2"
+
+---
+
 ## 📝 Documentação Pendente (Livros Auxiliares)
 
 > Estes livros são referenciados no GDD mas ainda não foram criados. Crie-os conforme necessário em cada Fase.
@@ -425,46 +449,35 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 > Para não se perder, use este mapa mental de onde encontrar cada coisa:
 
 ```
-eras-do-brasil/
+eras-do-brasil-game/
 ├── 📄 README.md                    ← Visão geral do projeto
-├── 📄 ROADMAP.md                   ← Status geral e fases
+├── 📄 ROADMAP.md                   ← Fases + decisões técnicas (ADRs)
 ├── 📄 docs/GUIA_RETOMADA.md        ← VOCÊ ESTÁ AQUI 🔴
 │
-├── 📂 gdd/                         ← Game Design Document (a Bíblia)
-│   ├── 📄 README.md                ← Índice do GDD com links
-│   ├── 📄 Game_Pitch.md            ← Apresentação do jogo
-│   ├── 📄 Project Plan.md          ← Plano de projeto (MUD Moderno)
-│   │
-│   ├── 📂 01_Livro_de_Regras/      ← 9 capítulos de mecânicas
-│   ├── 📂 02_Livro_de_Classes/     ← 12 classes Tier 1 + sistema
-│   ├── 📂 03_Enredo_e_Mundo/       ← Ato 1 + 18 mini-campanhas + Eco/Raiz
-│   ├── 📂 04_Design_Visual/        ← Pixel art, UI, HUD (specs de referência)
-│   ├── 📂 05_Livros_Auxiliares/    ← Atlas do Eco + futuros livros
-│   ├── 📂 06_Dados_e_Assets/       ← Schemas JSON, dados mockup
-│   └── 📂 99_Meta_e_Backlog/       ← Estratégia, Roadmap, Auditoria
+├── 📂 decisions/                   ← ADRs (decisões de arquitetura)
+│   ├── 📄 ADR-003 (estratégia repos)
+│   ├── 📄 ADR-004 (pivot Go)       ← ATIVO — PIVOT PRINCIPAL
+│   ├── 📄 ADR-005 (arquitetura servidor)
+│   └── 📄 ADR-006 (persistência SQLite)
 │
-├── 📂 docs/                        ← Documentação oficial
+├── 📂 docs/
 │   ├── 📂 product/                 ← MVP spec, plano de dev, perfil dev
 │   └── 📂 tech/                    ← ⚠️ Arquivados (Unity) — ver ADR-004
 │
-├── 📂 server/                      ← 🆕 Servidor Go (a ser criado)
-│   ├── main.go                     ← Entry point + tick loop
-│   ├── world/                      ← Mundo, Blocos, NPCs
-│   ├── combat/                     ← Motor D20, turnos, status
-│   ├── economy/                    ← Inventário, crafting, comércio
-│   └── data/                       ← JSONs e structs de dados
+├── 📂 game/
+│   ├── 📂 server/                  ← 🆕 Servidor Go (a ser criado na Fase 0)
+│   └── 📂 textClient/              ← Cliente texto experimental
 │
-├── 📂 web/                         ← Cliente HTML/CSS/JS
+├── 📂 historico/sessions/          ← Logs de sessão (histórico de decisões)
 │
-├── 📂 vibe/                        ← Contexto evolutivo do projeto
-│   ├── 📄 backlog.md               ← Tarefas por fase
-│   ├── 📄 project-status.md        ← Snapshot do estado atual
-│   ├── 📂 decisions/               ← ADRs (decisões de arquitetura)
-│   │   ├── 📄 ADR-003-estrategia-repositorios.md  ← Ativo
-│   │   └── 📄 ADR-004-pivot-mmorpg-servidor-go.md ← Ativo (PIVOT)
-│   └── 📂 sessions/               ← Logs de sessão
-│
-└── 📂 pocs/                        ← ⚠️ Arquivo histórico (38 POCs Unity — substituídas pelas Fases)
+└── [GDD em eras-do-brasil-gdd/]    ← Repositório separado
+    ├── 📂 01_Livro_de_Regras/      ← 9 capítulos de mecânicas
+    ├── 📂 02_Livro_de_Classes/     ← 12 classes Tier 1 + sistema
+    ├── 📂 03_Enredo_e_Mundo/       ← Ato 1 + 18 mini-campanhas + Eco/Raiz
+    ├── 📂 04_Design_Visual/        ← Pixel art, UI, HUD (specs de referência)
+    ├── 📂 05_Livros_Auxiliares/    ← Atlas do Eco + futuros livros
+    ├── 📂 06_Dados_e_Assets/       ← Schemas JSON, dados mockup
+    └── 📂 99_Meta_e_Backlog/       ← Estratégia, Auditoria, BACKLOG.md
 ```
 
 ---
@@ -487,4 +500,4 @@ eras-do-brasil/
 
 ---
 
-> **Última atualização:** 2026-03-11
+> **Última atualização:** 2026-03-15
