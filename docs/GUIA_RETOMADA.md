@@ -1,8 +1,9 @@
 # 🧭 Guia de Retomada — Eras do Brasil
 
-> **Objetivo:** Este documento é o seu ponto de partida para retomar o projeto. Ele organiza **tudo** que precisa ser feito, na **ordem exata** em que deve ser feito, com links para cada documento relevante.
+> **Objetivo:** Referência detalhada do projeto — critérios de aceite, referências ao GDD, estrutura de pastas e contexto por fase.
 >
-> **Como usar:** Siga as Fases na ordem. Cada Fase tem entregas numeradas. Não pule Fases.
+> **Para pegar a próxima tarefa:** abra [backlog.md](../backlog.md).
+> **Para entender o contexto da tarefa:** leia a fase correspondente aqui.
 >
 > **Stack:** Go 1.22+ (servidor) · HTML/CSS/JS (cliente) · WebSocket (gorilla/websocket) · JSON
 >
@@ -108,13 +109,22 @@ Fase 0 (Heartbeat) ──► Fase 1 (Mundo Vivo) ──► Fase 2 (Observador)
 
 ```
 server/
-├── main.go             (entry point + tick loop)
-├── world/              (Mundo, Bloco, NPC)
-├── combat/             (Motor D20, turnos, status)
-├── economy/            (Inventário, crafting, comércio)
-├── data/               (JSONs, structs de dados)
+├── main.go              (startup, wiring, graceful shutdown)
+├── engine/
+│   ├── gameloop.go      (GameLoop — sequencial, processa managers por tick)
+│   └── eventbus.go      (pub/sub para notificações assíncronas)
+├── world/               (Mundo, Bloco)
+├── npc/                 (NPC, rotinas, Utility AI)
+├── combat/              (Motor D20, turnos, status)
+├── economy/             (Inventário, crafting, comércio)
+├── player/              (Player, WebSocket session)
+├── narrative/           (StoryManager, quests)
+├── persist/             (snapshots async — ver ADR-006)
+├── data/                (JSONs, structs de dados)
 └── go.mod
 ```
+
+> **Arquitetura:** Game loop sequencial (não paralelo). Ver [ADR-005](../decisions/ADR-005-arquitetura-servidor-monolito-goroutines.md) para detalhes.
 
 **Referência:** [ADR-003 — Estrutura de Repositórios](../vibe/decisions/ADR-003-estrategia-repositorios.md)
 
@@ -123,7 +133,7 @@ server/
 | # | Entrega | Critério de Aceite |
 |---|---------|-------------------|
 | 0.1 | `go mod init` + estrutura de pastas | Compilar sem erros |
-| 0.2 | `main.go` com tick global | `time.Ticker` + goroutine imprimindo "Tick N" no console |
+| 0.2 | `main.go` com game loop sequencial | `time.Ticker` + goroutine única chamando managers em ordem |
 | 0.3 | Struct `Mundo` com `ProcessarTick()` | Struct criada em `world/`, chamada pelo tick loop |
 | 0.4 | WebSocket listener | Cliente HTML conecta, recebe JSON `{"tick": N}` a cada tick |
 
@@ -135,7 +145,7 @@ server/
 ### ✅ Checklist da Fase 0
 
 - [ ] 0.1 — `go mod init` + pastas (`server/`, `world/`, `combat/`, `economy/`, `data/`)
-- [ ] 0.2 — `main.go` com `time.Ticker` + goroutine de tick global
+- [ ] 0.2 — `main.go` com game loop sequencial (`time.Ticker` + goroutine única)
 - [ ] 0.3 — Struct `Mundo` em `world/mundo.go` com `ProcessarTick()`
 - [ ] 0.4 — WebSocket listener (`gorilla/websocket`) enviando tick ao cliente
 
@@ -452,7 +462,8 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 eras-do-brasil-game/
 ├── 📄 README.md                    ← Visão geral do projeto
 ├── 📄 ROADMAP.md                   ← Fases + decisões técnicas (ADRs)
-├── 📄 docs/GUIA_RETOMADA.md        ← VOCÊ ESTÁ AQUI 🔴
+├── 📄 backlog.md                   ← Lista de tarefas (próxima tarefa → trabalhar)
+├── 📄 docs/GUIA_RETOMADA.md        ← VOCÊ ESTÁ AQUI 🔴 (referência detalhada)
 │
 ├── 📂 decisions/                   ← ADRs (decisões de arquitetura)
 │   ├── 📄 ADR-003 (estratégia repos)
