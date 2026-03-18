@@ -10,7 +10,7 @@ O **GDD (Game Design Document)** e o lore estão no repositório [eras-do-brasil
 
 ## Stack
 
-- **Go 1.22+** — Goroutines para tick loop, IA de NPCs e conexões simultâneas
+- **Go 1.22+** — Goroutines para game loop, IA de NPCs e conexões simultâneas
 - **WebSocket** (gorilla/websocket) — Comunicação bidirecional em tempo real
 - **SQLite** (modernc.org/sqlite) — Persistência RAM-First com snapshots async
 - **Cliente Web** — HTML/CSS/JS puro via WebSocket

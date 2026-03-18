@@ -29,4 +29,4 @@ textClient/
 
 ## Fase Atual
 
-**Fase 0: Heartbeat** — Exibir "Tick: N" atualizado em tempo real via WebSocket.
+**Fase 0: Heartbeat** — Exibir estado do jogo atualizado em tempo real via WebSocket.

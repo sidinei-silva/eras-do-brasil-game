@@ -4,7 +4,7 @@
 
 ## Stack
 
-- **Go 1.22+** — Goroutines para tick loop, IA de NPCs e conexões simultâneas
+- **Go 1.22+** — Goroutines para game loop, IA de NPCs e conexões simultâneas
 - **WebSocket** (gorilla/websocket) — Comunicação bidirecional em tempo real
 - **SQLite** (modernc.org/sqlite) — Persistência RAM-First com snapshots async
 
@@ -23,7 +23,7 @@ server/
 ├── go.mod
 ├── engine/
 │   ├── eventbus.go   # Pub/Sub com Go channels
-│   └── tick.go       # TickEngine com time.Ticker
+│   └── gameloop.go   # GameLoop com time.Ticker
 ├── world/            # WorldManager — blocos, grafo, dia/noite
 ├── combat/           # CombatManager — D20, turnos, loot
 ├── economy/          # EconomyManager — crafting, comércio
@@ -55,4 +55,4 @@ go run main.go
 
 ## Fase Atual
 
-**Fase 0: Heartbeat** — Tick loop + WebSocket + cliente mínimo.
+**Fase 0: Heartbeat** — Game loop + WebSocket + cliente mínimo.
