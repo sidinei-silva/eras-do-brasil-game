@@ -35,7 +35,7 @@ O projeto Eras do Brasil passou por 3 anos de evolução documentária sem produ
 
 - **Servidor autoritário:** Toda lógica roda no servidor (ticks, NPC AI, combate, economia)
 - **Tick global proativo:** `setInterval` dispara `Mundo.ProcessarTick()` independente de jogadores
-- **Motor comutável:** Mesmo `ProcessarTick()` funciona offline (testes) e online (servidor)
+- **Motor comutável:** Mesmo `ProcessarTick()` funciona em modo debug/dev (testes) e online (servidor). Jogo é 100% online persistente — não há modo offline
 - **Data-driven:** NPCs, items, quests definidos em JSON, motor genérico
 
 ### Fases de MVP
@@ -53,8 +53,9 @@ O projeto Eras do Brasil passou por 3 anos de evolução documentária sem produ
 ### GDD
 
 - **Rollback cirúrgico:** Restaurar seções MMO removidas nos 4 commits de Nov/Dez 2025
-- **Adicionar do legado:** StoryManager, Missões Competitivas, BountyManager, Full Loot, Inimigos Evolutivos, Relógio da Ruptura
-- **Preservar do atual:** Economia 5x5, Lifeskills/Proficiência, NPC AI (Utility AI), Facções 5 tiers, Magia (taxonomia completa), Combate (9 condições), Tick Debt (adaptado)
+- **Adicionar do legado:** StoryManager, Quests Competitivas, BountyManager, Penalidade de Morte (substitui Full Loot), Inimigos Evolutivos, Temporadas (absorve Relógio da Ruptura)
+- **Preservar do atual:** Economia 5x5, Lifeskills/Proficiência, NPC AI (Utility AI), Facções 5 tiers, Magia (taxonomia completa), Combate (9 condições)
+- **Decisões posteriores (ADRs 007-012 no GDD):** Tick removido como mecânica visível (agora é game loop interno), Full Loot removido, PvP removido do MVP, modo offline removido, sistema de temporadas, inimigos evolutivos com tiers
 - **Formato:** Manter GDD narrativo como referência de design, criar specs técnicas em `docs/tech/` quando necessário para implementação
 
 ## Consequências
