@@ -17,13 +17,13 @@
 
 | Mês | Foco Principal | Entregável |
 |-----|---------------|------------|
-| **Mar** | Pivot + Rollback GDD + Fase 0 | GDD atualizado, servidor Go com tick + WebSocket |
-| **Abr** | Fase 1: Living World | 3 blocos, 2 NPCs com rotina por ticks |
+| **Mar** | Pivot + Rollback GDD + Fase 0 | GDD atualizado, servidor Go com game loop + WebSocket |
+| **Abr** | Fase 1: Living World | 3 blocos, 2 NPCs com rotina pelo relógio do jogo |
 | **Mai** | Fase 2: Observer | Cliente web mostrando mundo vivo em tempo real |
 | **Jun** | Fase 3: Player (parte 1) | Criação de personagem, movimentação, Motor D20 |
 | **Jul** | Fase 3: Player (parte 2) | Combate estático, inventário, save/load |
 | **Ago** | Fase 4: Interaction (parte 1) | NPCs com diálogos, fofoca, facções |
-| **Set** | Fase 4: Interaction (parte 2) | Crafting, coleta, economia, Relógio da Ruptura |
+| **Set** | Fase 4: Interaction (parte 2) | Crafting, coleta, economia, temporadas |
 | **Out** | Fase 4: Interaction (parte 3) | 3 classes, 8 blocos, 1 mini-campanha |
 | **Nov** | Playtest + polish | Loop completo funcional, testes |
 | **Dez** | Retrospectiva + planejamento 2027 | Decisão sobre Fase 5 (D20 Full) |
@@ -40,17 +40,17 @@
 - [ ] `go mod init` + projeto Go básico rodando
 - [ ] Tick loop com `time.Ticker` (goroutine)
 - [ ] WebSocket server (`gorilla/websocket`)
-- [ ] Cliente HTML mínimo conectado, mostrando "Tick: N"
+- [ ] Cliente HTML mínimo conectado, mostrando estado do jogo
 
 ### Fase 1: Living World (Abril 2026)
 
 **~24h (4 semanas)**
 - [ ] Structs para Bloco, NPC, Mundo
 - [ ] Grafo de 3 blocos (Vila, Floresta, Ruínas) com adjacência
-- [ ] NPC com agenda por tick (Ferreiro: casa→forja→casa)
+- [ ] NPC com agenda pelo relógio do jogo (Ferreiro: casa→forja→casa)
 - [ ] Utility AI básica (necessidades: fome, cansaço)
-- [ ] Ciclo Dia/Noite por ticks
-- [ ] Log de eventos: "Tick 42: Ferreiro chegou na Forja"
+- [ ] Ciclo Dia/Noite pelo relógio do jogo (Manhã/Tarde/Noite/Madrugada)
+- [ ] Log de eventos: "Manhã: Ferreiro chegou na Forja"
 
 ### Fase 2: Observer (Maio 2026)
 
@@ -58,14 +58,14 @@
 - [ ] Cliente web com mapa de nós (HTML/CSS clicável)
 - [ ] Feed de eventos em tempo real via WebSocket
 - [ ] Inspeção de NPC (clicar → ver estado, necessidade, ação)
-- [ ] Relógio visual (Tick + período)
+- [ ] Relógio visual (período do jogo + dia/noite)
 
 ### Fase 3: Player (Junho-Julho 2026)
 
 **~48h (8 semanas)**
 - [ ] Criação de personagem (Origem + Classe + Atributos point-buy)
 - [ ] Motor D20 (rolar + mods vs CD, acerto/falha/crítico)
-- [ ] Movimentação por blocos (gastar Ticks)
+- [ ] Movimentação por blocos (custo em tempo real)
 - [ ] Combate estático por turnos (Iniciativa → D20 → Dano → Loot)
 - [ ] Inventário (equipar/desequipar, peso)
 - [ ] Save/Load (JSON)
@@ -74,7 +74,7 @@
 ### Fase 4: Interaction (Agosto-Outubro 2026)
 
 **~72h (12 semanas)**
-- [ ] Relógio da Ruptura (500 Ticks)
+- [ ] Temporadas (state machine Tensão → Apogeu → Legado — absorve Relógio da Ruptura)
 - [ ] NPCs com diálogos ramificados (condições)
 - [ ] Fofoca (knowledgeBase entre NPCs)
 - [ ] Facções e reputação
