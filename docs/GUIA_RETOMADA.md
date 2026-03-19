@@ -9,7 +9,7 @@
 >
 > **Decisão do Pivot:** [ADR-004](../vibe/decisions/ADR-004-pivot-mmorpg-servidor-go.md)
 >
-> **Última atualização:** 2026-03-15
+> **Última atualização:** 2026-03-18 (sync com decisões do GDD — branch `decisoes-narrativa-mmorpg-2026-03-17`)
 
 ---
 
@@ -37,8 +37,8 @@ Estas são conquistas de documentação **já concluídas**, não precisam ser r
 - ✅ Atlas do Eco Ato 1 (mapa de nós com distâncias)
 - ✅ Design Visual completo (estilo, paleta, UI Fase 1 e 2)
 - ✅ Pivot completo de Unity Co-op P2P → Servidor Go MMORPG (ADR-004)
-- ✅ Full Loot formalizado no GDD (Cap. 8, seção 8.10)
-- ✅ Sistema Eco/Raiz (offline + online) definido nos Conceitos Centrais
+- ✅ Penalidade de morte definida no GDD (perda de 10% XP + 15% durabilidade — sem drop de itens. Ver ADR-008 no GDD)
+- ✅ Sistema Eco/Raiz definido nos Conceitos Centrais (Eco = instância de temporada passada, feature futura Temporada 3+; Raiz = mundo persistente, único modo de jogo)
 
 ---
 
@@ -49,13 +49,13 @@ Estas são conquistas de documentação **já concluídas**, não precisam ser r
 
 | Fase | Nome | Tipo | O que entrega |
 |------|------|------|---------------|
-| **0** | [Heartbeat](#-fase-0--heartbeat) | 💻 Servidor | Tick global + 1 WebSocket |
+| **0** | [Heartbeat](#-fase-0--heartbeat) | 💻 Servidor | Game loop + 1 WebSocket |
 | **1** | [Mundo Vivo](#-fase-1--mundo-vivo) | 💻 Servidor | NPCs com rotinas e IA |
 | **2** | [Observador](#-fase-2--observador) | 💻 Full-stack | Cliente web read-only |
 | **3** | [Jogador (≈ MVP)](#-fase-3--jogador--mvp-o-despertar) | 💻 Full-stack | Criar, explorar, lutar, coletar |
 | **4** | [Interação](#-fase-4--interação) | 💻 Full-stack | Diálogos, quests, crafting, comércio |
 | **5** | [D20 Completo](#-fase-5--d20-completo) | 💻 Full-stack | Sistema completo, 12 classes, Tiers |
-| **6+** | [Multiplayer](#-fase-6--multiplayer) | 💻 Full-stack | Full loot, expedições, eventos globais |
+| **6+** | [Multiplayer](#-fase-6--multiplayer) | 💻 Full-stack | Inimigos evolutivos, quests competitivas, temporadas |
 
 ```
 Fase 0 (Heartbeat) ──► Fase 1 (Mundo Vivo) ──► Fase 2 (Observador)
@@ -88,7 +88,7 @@ Fase 0 (Heartbeat) ──► Fase 1 (Mundo Vivo) ──► Fase 2 (Observador)
 
 ### Entregas Admin por Fase
 
-- **Fase 0:** status global, tick atual, uptime e saúde do loop.
+- **Fase 0:** status global, estado do game loop, uptime e saúde do loop.
 - **Fase 1:** listar/localizar NPCs e inimigos, inspecionar estado por entidade.
 - **Fase 2:** observabilidade dos comandos no cliente observador.
 - **Fase 3:** inspeção de jogador, inventário e fluxo de save/load.
@@ -100,7 +100,7 @@ Fase 0 (Heartbeat) ──► Fase 1 (Mundo Vivo) ──► Fase 2 (Observador)
 
 ## 💻 Fase 0 — Heartbeat
 
-> **Objetivo:** Provar que o servidor Go funciona — tick global rodando, uma conexão WebSocket recebendo estado.
+> **Objetivo:** Provar que o servidor Go funciona — game loop rodando, uma conexão WebSocket recebendo estado.
 >
 > **Estimativa:** 1–2 sessões
 > **Pré-requisito:** Go 1.22+ instalado
@@ -134,12 +134,12 @@ server/
 |---|---------|-------------------|
 | 0.1 | `go mod init` + estrutura de pastas | Compilar sem erros |
 | 0.2 | `main.go` com game loop sequencial | `time.Ticker` + goroutine única chamando managers em ordem |
-| 0.3 | Struct `Mundo` com `ProcessarTick()` | Struct criada em `world/`, chamada pelo tick loop |
-| 0.4 | WebSocket listener | Cliente HTML conecta, recebe JSON `{"tick": N}` a cada tick |
+| 0.3 | Struct `Mundo` com `ProcessarTick()` | Struct criada em `world/`, chamada pelo game loop |
+| 0.4 | WebSocket listener | Cliente HTML conecta, recebe JSON de estado a cada ciclo do game loop |
 
 ### Referências do GDD
 
-- **Tick Comutável:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.2
+- **Sistema de Tempo:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.2 — Relógio do jogo: Manhã/Tarde/Noite/Madrugada (1 dia ≈ 2-4h reais). Tick é apenas implementação interna do game loop.
 - **Arquitetura do Motor:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.12
 
 ### ✅ Checklist da Fase 0
@@ -147,7 +147,7 @@ server/
 - [ ] 0.1 — `go mod init` + pastas (`server/`, `world/`, `combat/`, `economy/`, `data/`)
 - [ ] 0.2 — `main.go` com game loop sequencial (`time.Ticker` + goroutine única)
 - [ ] 0.3 — Struct `Mundo` em `world/mundo.go` com `ProcessarTick()`
-- [ ] 0.4 — WebSocket listener (`gorilla/websocket`) enviando tick ao cliente
+- [ ] 0.4 — WebSocket listener (`gorilla/websocket`) enviando estado ao cliente
 
 ---
 
@@ -164,9 +164,9 @@ server/
 |---|---------|-------------------|
 | 1.1 | Structs de NPC com rotinas | NPC segue agenda diária (acordar, trabalhar, comer, dormir) |
 | 1.2 | Utility AI básica | NPC escolhe ação com base em necessidades (fome, fadiga, medo) |
-| 1.3 | Ciclo dia/noite | Tick avança relógio, NPCs mudam comportamento à noite |
+| 1.3 | Ciclo dia/noite | Game loop avança relógio do jogo (Manhã/Tarde/Noite/Madrugada), NPCs mudam comportamento à noite |
 | 1.4 | Sistema de Fofoca | NPCs compartilham informações sobre eventos |
-| 1.5 | StoryManager (sementes) | Arco narrativo reage a ações no mundo |
+| 1.5 | StoryManager (sementes) | Arco narrativo reage a ações no mundo. Temporadas com state machine de 3 estados (Tensão → Apogeu → Legado). Ver ADR-012 no GDD |
 
 ### Referências do GDD
 
@@ -179,7 +179,7 @@ server/
 
 - [ ] 1.1 — Structs NPC em `world/npc.go` com rotina diária
 - [ ] 1.2 — Utility AI: Score = Peso × (1 – Necessidade Normalizada)
-- [ ] 1.3 — Ciclo dia/noite vinculado ao tick global
+- [ ] 1.3 — Ciclo dia/noite vinculado ao relógio do jogo (4 períodos: Manhã/Tarde/Noite/Madrugada)
 - [ ] 1.4 — NPCs propagam informações entre si via fofoca
 - [ ] 1.5 — StoryManager: sementes narrativas reagem a threshold de eventos
 
@@ -199,7 +199,7 @@ server/
 | 2.1 | Cliente HTML/CSS/JS básico | Página conecta via WebSocket, exibe dados |
 | 2.2 | Mapa de nós (read-only) | Mapa mostra blocos com NPCs se movendo |
 | 2.3 | Log de eventos | Painel lateral com eventos do mundo em tempo real |
-| 2.4 | HUD de tempo | Relógio de ticks, ciclo dia/noite, clima |
+| 2.4 | HUD de tempo | Relógio do jogo (Manhã/Tarde/Noite/Madrugada), ciclo dia/noite, clima |
 
 ### Referências do GDD
 
@@ -211,7 +211,7 @@ server/
 - [ ] 2.1 — `web/index.html` conecta ao servidor e exibe JSON recebido
 - [ ] 2.2 — Mapa de nós renderizado mostrando posição de NPCs
 - [ ] 2.3 — Log de eventos em painel lateral (lista rolável)
-- [ ] 2.4 — Relógio de ticks + indicador dia/noite
+- [ ] 2.4 — Relógio do jogo (períodos) + indicador dia/noite
 
 ---
 
@@ -241,7 +241,7 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 | # | Entrega | Critério de Aceite |
 |---|---------|-------------------|
 | 3.1 | Criação de personagem | Escolher origem + classe, point-buy (27 pts), stats calculados |
-| 3.2 | Navegação por blocos | Gastar Ticks para se mover, custo por terreno |
+| 3.2 | Navegação por blocos | Gastar tempo (em minutos reais) para se mover, custo por terreno |
 | 3.3 | Combate estático (D20 simplificado) | Iniciativa → Turnos → D20 vs Defesa → Dano → Loot |
 | 3.4 | Inventário e equipamentos | Equipar/desequipar, peso/capacidade |
 | 3.5 | HUD principal | PV, XP, recursos, relógio, posição |
@@ -270,7 +270,7 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 ### ✅ Checklist da Fase 3
 
 - [ ] 3.1 — Criação de personagem (point-buy, 1 classe, stats)
-- [ ] 3.2 — Navegação por blocos (Vila→Floresta→Ruínas, custo de Ticks)
+- [ ] 3.2 — Navegação por blocos (Vila→Floresta→Ruínas, custo em tempo real)
 - [ ] 3.3 — Combate estático (D20 simplificado, Iniciativa, Turnos, Loot)
 - [ ] 3.4 — Inventário (equipar, peso, capacidade)
 - [ ] 3.5 — HUD principal (PV, XP, relógio, posição)
@@ -355,7 +355,7 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 
 ## 💻 Fase 6+ — Multiplayer
 
-> **Objetivo:** Múltiplos jogadores no mesmo mundo persistente. Full loot, expedições competitivas, eventos globais.
+> **Objetivo:** Múltiplos jogadores no mesmo mundo persistente. Penalidade de morte, inimigos evolutivos, quests competitivas, temporadas.
 >
 > **Estimativa:** Futuro (após Fase 5 estável)
 > **Pré-requisito:** Fase 5
@@ -367,29 +367,33 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 | # | Entrega | Critério de Aceite |
 |---|---------|-------------------|
 | 6.1 | Múltiplas conexões | 2+ jogadores no mesmo mundo simultaneamente |
-| 6.2 | Full Loot | Morte = perda de inventário (com Marca do Eco e seguro) |
-| 6.3 | Expedições na Raiz | Dungeons competitivas para grupos |
-| 6.4 | Missões competitivas | Jogadores competem pelo mesmo objetivo |
-| 6.5 | Eventos globais | Rupturas, mudanças de era, afetam todos |
-| 6.6 | Inimigos evolutivos | NPCs adaptam táticas com base em padrões dos jogadores |
+| 6.2 | Penalidade de morte | Morte = perda de 10% XP (não perde nível) + 15% durabilidade nos equipamentos. Sem drop de itens (ver ADR-008 no GDD) |
+| 6.3 | Quests competitivas | Múltiplos players aceitam a mesma quest; primeiro a entregar recebe recompensa total; timeout com parcial; verificação server-side (ver ADR-010 no GDD) |
+| 6.4 | Inimigos evolutivos | Mob ganha XP ao matar player, evolui Normal → Veterano → Alfa → Lenda, migra de região ao atingir cap. Campos: `killCount`, `level`, `tier`, `originMapId` (ver ADR-011 no GDD) |
+| 6.5 | Temporadas | Narrativa em arcos (Tensão → Apogeu → Legado). State machine de 3 estados. Votação simples. Relógio da Ruptura absorvido (ver ADR-012 no GDD) |
+| 6.6 | Eventos globais | Mudanças de era, afetam todos os jogadores |
 | 6.7 | Economia multiplayer | Comércio entre jogadores (server-authoritative) |
+| 6.8 | Bandeirantes como facção NPC | Facção NPC ativa do mundo (não mais "rival de corrida") |
 
 ### Referências do GDD
 
-- **Full Loot:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.10
-- **Missões Competitivas:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.8
+- **Penalidade de Morte:** ADR-008 no GDD (substitui Full Loot — sem drop de itens)
+- **Quests Competitivas:** ADR-010 no GDD
+- **Inimigos Evolutivos:** ADR-011 no GDD
+- **Temporadas:** ADR-012 no GDD (absorve Relógio da Ruptura)
 - **Eventos Globais:** [`gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md`](../gdd/01_Livro_de_Regras/08_Mundo_Vivo_e_NPCs.md) §8.9
-- **Eco/Raiz:** [`gdd/03_Enredo_e_Mundo/00_Conceitos_Centrais_do_Mundo.md`](../gdd/03_Enredo_e_Mundo/00_Conceitos_Centrais_do_Mundo.md) §4
+- **Eco/Raiz:** [`gdd/03_Enredo_e_Mundo/00_Conceitos_Centrais_do_Mundo.md`](../gdd/03_Enredo_e_Mundo/00_Conceitos_Centrais_do_Mundo.md) §4 — Eco = instância de temporada passada (Temporada 3+). Raiz = mundo persistente.
 
 ### ✅ Checklist da Fase 6
 
 - [ ] 6.1 — Múltiplas conexões WebSocket simultâneas
-- [ ] 6.2 — Full Loot (Marca do Eco, seguro, mitigações)
-- [ ] 6.3 — Expedições na Raiz (dungeons competitivas)
-- [ ] 6.4 — Missões competitivas entre jogadores
-- [ ] 6.5 — Eventos globais (rupturas, era shifts)
-- [ ] 6.6 — Inimigos evolutivos
+- [ ] 6.2 — Penalidade de morte (perda de XP e durabilidade)
+- [ ] 6.3 — Quests competitivas (primeiro a entregar, timeout parcial, server-side)
+- [ ] 6.4 — Inimigos evolutivos (Normal → Veterano → Alfa → Lenda)
+- [ ] 6.5 — Temporadas (state machine Tensão → Apogeu → Legado)
+- [ ] 6.6 — Eventos globais (mudanças de era)
 - [ ] 6.7 — Economia multiplayer server-authoritative
+- [ ] 6.8 — Bandeirantes como facção NPC ativa
 
 ---
 
@@ -446,7 +450,7 @@ Criar Personagem (Origem Indígena → Guerreiro Tribal)
 | 3 | Motivação da facção Folclórica no Ato 1 | Afeta quests Fase 4 |
 | 4 | "Mana" referenciada sem sistema — Fadiga vs Mana | Afeta classes mágicas Fase 5 |
 | 5 | Dano Espiritual / Exaustão Espiritual não definidos | Combate Fase 5 |
-| 6 | Escala de Ticks: 500 Ticks = quanto tempo real? | Fase 0 (definir ao implementar) |
+| 6 | ~~Escala de Ticks~~ **Resolvido:** 1 dia do jogo ≈ 2-4 horas reais, 4 períodos (Manhã/Tarde/Noite/Madrugada). Tick é apenas implementação interna do game loop (ver ADR-007 no GDD) | ✅ Resolvido |
 | 7 | Guardião da Fenda: identidade e stats | Fase 4+ (boss) |
 | 8 | Sanidade/Moral: definir ou remover | Fase 4+ |
 | 9 | "Ecoera": definir ou remover | Lore |
@@ -496,7 +500,7 @@ eras-do-brasil-game/
 ## 🎯 Resumo Executivo
 
 **O que fazer AGORA:**
-1. **Fase 0 — Heartbeat:** `main.go` + tick + WebSocket
+1. **Fase 0 — Heartbeat:** `main.go` + game loop + WebSocket
 
 **O que fazer DEPOIS:**
 2. **Fase 1 — Mundo Vivo:** NPCs com rotinas e IA
@@ -505,10 +509,10 @@ eras-do-brasil-game/
 
 **O que NÃO fazer agora:**
 - Tiers 2/3 das classes (Fase 5)
-- Full Loot e Multiplayer (Fase 6)
+- Multiplayer, temporadas e quests competitivas (Fase 6)
 - Livro de Magias (Fase 5)
 - Grid tático (Fase 5)
 
 ---
 
-> **Última atualização:** 2026-03-15
+> **Última atualização:** 2026-03-18 (sync com decisões do GDD — branch `decisoes-narrativa-mmorpg-2026-03-17`)

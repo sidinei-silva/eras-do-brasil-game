@@ -65,7 +65,7 @@ Precisamos de uma estratégia que:
 
 **Snapshot periódico:** A cada 30-60 segundos, PersistManager coleta todas as entidades dirty e faz batch write dentro de uma transação SQLite.
 
-**Escrita crítica:** Ações irreversíveis (trade entre jogadores, morte com full loot, level-up) enviam imediatamente para o channel de persistência. A escrita continua sendo async — nunca bloqueia o tick — mas entra na fila com prioridade.
+**Escrita crítica:** Ações irreversíveis (trade entre jogadores, penalidade de morte, level-up) enviam imediatamente para o channel de persistência. A escrita continua sendo async — nunca bloqueia o tick — mas entra na fila com prioridade.
 
 **Shutdown gracioso:**
 1. `signal.Notify(SIGTERM, SIGINT)` captura sinal

@@ -11,13 +11,13 @@
 - [ ] `main.go` com game loop sequencial (`time.Ticker` + goroutine)
 - [ ] Struct `Mundo` em `world/mundo.go` com `ProcessarTick()`
 - [ ] WebSocket listener (`gorilla/websocket`) — cliente HTML recebe ticks
-- [ ] Admin v0: status, tick atual, uptime
+- [ ] Admin v0: status, estado do game loop, uptime
 
 ## Fase 1 — Mundo Vivo
 
 - [ ] Structs NPC com rotinas diárias (acordar, trabalhar, comer, dormir)
 - [ ] Utility AI básica (Score = Peso × (1 – Necessidade Normalizada))
-- [ ] Ciclo dia/noite vinculado ao tick global
+- [ ] Ciclo dia/noite vinculado ao relógio do jogo (Manhã/Tarde/Noite/Madrugada)
 - [ ] Sistema de Fofoca entre NPCs
 - [ ] StoryManager — sementes narrativas reagem a threshold de eventos
 - [ ] Admin v1: listar/localizar NPCs, inspecionar estado por entidade
@@ -27,13 +27,13 @@
 - [ ] Cliente HTML/CSS/JS conecta via WebSocket, exibe estado do mundo
 - [ ] Mapa de nós navegável (read-only, NPCs se movendo)
 - [ ] Log de eventos em painel lateral
-- [ ] HUD de tempo (relógio de ticks, dia/noite)
+- [ ] HUD de tempo (relógio do jogo com períodos, dia/noite)
 - [ ] Admin v2: observabilidade dos comandos no cliente
 
 ## Fase 3 — Jogador (MVP "O Despertar")
 
 - [ ] Criação de personagem (1 classe: Guerreiro Tribal, point-buy 27 pts)
-- [ ] Navegação por blocos com custo de Ticks (3 blocos: Vila, Floresta, Ruínas)
+- [ ] Navegação por blocos com custo em tempo real (3 blocos: Vila, Floresta, Ruínas)
 - [ ] Combate estático (D20 simplificado — Iniciativa → Turnos → Loot)
 - [ ] Inventário e equipamentos (equipar, peso, capacidade)
 - [ ] HUD principal (PV, XP, recursos, relógio, posição)
@@ -65,12 +65,13 @@
 ## Fase 6 — Multiplayer
 
 - [ ] Múltiplas conexões WebSocket simultâneas
-- [ ] Full Loot (Marca do Eco, seguro, mitigações)
-- [ ] Expedições na Raiz (dungeons competitivas)
-- [ ] Missões competitivas entre jogadores
-- [ ] Eventos globais (rupturas, mudanças de era)
-- [ ] Inimigos evolutivos (adaptam táticas)
+- [ ] Penalidade de morte (perda de 10% XP + 15% durabilidade — sem drop de itens)
+- [ ] Quests competitivas (primeiro a entregar, timeout parcial, server-side)
+- [ ] Inimigos evolutivos (Normal → Veterano → Alfa → Lenda, migram de região)
+- [ ] Temporadas (state machine Tensão → Apogeu → Legado, votação simples)
+- [ ] Eventos globais (mudanças de era)
 - [ ] Economia multiplayer server-authoritative
+- [ ] Bandeirantes como facção NPC ativa
 - [ ] Admin v6: governança operacional + auditoria avançada
 
 ## Game Feel (Transversal)

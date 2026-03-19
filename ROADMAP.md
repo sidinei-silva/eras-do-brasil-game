@@ -12,13 +12,13 @@
 
 | Fase | Nome | Objetivo | Status |
 |------|------|----------|--------|
-| **0** | Heartbeat | Servidor Go com tick loop + WebSocket + cliente mínimo | 🟡 Próxima |
-| **1** | Living World | Blocos, NPCs com Utility AI, ciclo dia/noite por ticks | 🔲 Pendente |
+| **0** | Heartbeat | Servidor Go com game loop + WebSocket + cliente mínimo | 🟡 Próxima |
+| **1** | Living World | Blocos, NPCs com Utility AI, ciclo dia/noite (relógio do jogo) | 🔲 Pendente |
 | **2** | Observer | Cliente web observa o mundo em tempo real (read-only) | 🔲 Pendente |
 | **3** | Player ≈ MVP | Criação de personagem, D20, combate, inventário, save | 🔲 Pendente |
-| **4** | Interaction | Diálogos, facções, crafting, Relógio da Ruptura | 🔲 Pendente |
+| **4** | Interaction | Diálogos, facções, crafting, temporadas | 🔲 Pendente |
 | **5** | D20 Full | 12 classes, 3 Origens, grid tático, Ato 1 completo | 🔲 Pendente |
-| **6** | Multiplayer | Full loot, missões competitivas, eventos globais | 🔲 Pendente |
+| **6** | Multiplayer | Penalidade de morte, quests competitivas, inimigos evolutivos, temporadas | 🔲 Pendente |
 
 ```
 Fase 0 ──► Fase 1 ──► Fase 2 ──► Fase 3 ──► Fase 4 ──► Fase 5 ──► Fase 6
@@ -39,4 +39,6 @@ Fase 0 ──► Fase 1 ──► Fase 2 ──► Fase 3 ──► Fase 4 ─�
 
 ---
 
-**Última atualização:** 2026-03-15
+> **Nota:** Os ADRs 007-012 (decisões de narrativa e mecânicas) estão no repositório [eras-do-brasil-gdd](https://github.com/sidinei-silva/eras-do-brasil-gdd). Branch: `decisoes-narrativa-mmorpg-2026-03-17`.
+
+**Última atualização:** 2026-03-18

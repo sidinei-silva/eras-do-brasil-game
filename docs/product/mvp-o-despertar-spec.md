@@ -27,8 +27,8 @@ Um loop jogável de **15-30 minutos** que demonstra o core do Eras do Brasil:
 
 ### Mundo
 - **3 Nós:** Vila de São Tomé (hub), Floresta do Norte, Ruínas do Eco
-- **Navegação:** Mapa de nós com custo em Ticks para viagem
-- **Ticks:** Relógio universal rodando (dia/noite visual, sem impacto mecânico no MVP)
+- **Navegação:** Mapa de nós com custo em tempo real para viagem
+- **Relógio do Jogo:** Ciclo dia/noite com 4 períodos (Manhã/Tarde/Noite/Madrugada), visual, sem impacto mecânico no MVP
 
 ### Combate
 - **Tipo:** Estático (sem grid), por turnos
@@ -43,7 +43,7 @@ Um loop jogável de **15-30 minutos** que demonstra o core do Eras do Brasil:
 - **Implementação:** Hardcoded (sem sistema de quests genérico)
 
 ### UI
-- **HUD:** HP bar, XP bar, relógio de Ticks, botão de inventário
+- **HUD:** HP bar, XP bar, relógio do jogo (período), botão de inventário
 - **Mapa:** Tela com 3 nós clicáveis
 - **Combate:** UI de ações (ataque, habilidades, item, fugir)
 - **Inventário:** Lista simples com equip slot
@@ -100,7 +100,7 @@ Um loop jogável de **15-30 minutos** que demonstra o core do Eras do Brasil:
 | 02 | Core | Motor D20 |
 | 03 | Core | Atributos e Criação |
 | 06 | Core | Matriz de Itens |
-| 07 | World | Motor de Ticks |
+| 07 | World | Game Loop e Relógio do Jogo |
 | 08 | World | Navegação por Blocos |
 | 17 | Combat | Combate Estático |
 | 18 | Combat | Status e Condições |
