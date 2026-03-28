@@ -2,6 +2,7 @@
 
 > Abra, veja a próxima tarefa, trabalhe nela.
 > Detalhes completos (AC, referências GDD, folder structure): [docs/GUIA_RETOMADA.md](docs/GUIA_RETOMADA.md)
+> Trilha de estudos Go e arquitetura: [estudos/README.md](estudos/README.md)
 
 ---
 

@@ -23,6 +23,7 @@ O **GDD (Game Design Document)** e o lore estão no repositório [eras-do-brasil
 │   └── textClient/   # Cliente web HTML/CSS/JS
 ├── decisions/        # ADRs (Architecture Decision Records)
 ├── docs/             # Guias e specs de produto
+├── estudos/          # Trilhas de estudo tecnico (Go, arquitetura, pratica)
 ├── historico/        # Sessões de trabalho anteriores
 ├── ROADMAP.md        # Fases de desenvolvimento
 ├── backlog.md        # Tarefas detalhadas

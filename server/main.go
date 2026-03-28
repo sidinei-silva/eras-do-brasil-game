@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/socket"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
@@ -67,6 +68,26 @@ func main() {
 	// Quando ctx é cancelado, loop.Start() vê <-ctx.Done() e sai.
 	go loop.Start(ctx)
 
+	hub := socket.NewHub()
+	go hub.Run(ctx)
+
+	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				hub.Broadcast(socket.OutboundEvent{
+					Type: "world_snapshot",
+					Data: mundo.Snapshot(),
+				})
+			}
+		}
+	}()
+
 	// Define um endpoint HTTP que retorna status em JSON.
 	// http.HandleFunc(caminho, função_handler) = "quando alguém acessar caminho, chame a função".
 	http.HandleFunc("/admin/status", func(w http.ResponseWriter, r *http.Request) {
@@ -86,9 +107,14 @@ func main() {
 			// "world": fotografia do estado do mundo (hora do jogo, período do dia)
 			// IMPORTANTE: Snapshot() SÓ LÊ, não modifica. ProcessTick() MODIFICA!
 			"world": mundo.Snapshot(),
+			"lobby": map[string]any{
+				"online": hub.OnlineCount(),
+			},
 		})
 		// O "_" descarta o erro se houver (não é bom prática, mas por enquanto é OK para debug).
 	})
+
+	http.HandleFunc("/ws", socket.WsHandler(hub))
 
 	// http.Server = configuração do servidor HTTP.
 	// &http.Server{} = cria uma nova instância (& = endereço).

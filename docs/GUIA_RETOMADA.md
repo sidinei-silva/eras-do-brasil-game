@@ -4,6 +4,7 @@
 >
 > **Para pegar a próxima tarefa:** abra [backlog.md](../backlog.md).
 > **Para entender o contexto da tarefa:** leia a fase correspondente aqui.
+> **Para estudar Go e arquitetura usada no codigo:** abra [estudos/README.md](../estudos/README.md).
 >
 > **Stack:** Go 1.22+ (servidor) · HTML/CSS/JS (cliente) · WebSocket (gorilla/websocket) · JSON
 >
