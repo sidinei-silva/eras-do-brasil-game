@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eras do Brasil — Admin Console</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="header">
+    <h1>Eras do Brasil — Admin</h1>
+    <div id="connection-status" class="status-disconnected">Desconectado</div>
+  </header>
+
+  <main id="panels">
+    <section class="panel" id="panel-gameloop">
+      <div class="panel-header">Game Loop</div>
+      <div class="panel-body">
+        <div class="stat"><span class="label">Tick</span><span id="gl-tick" class="value">—</span></div>
+        <div class="stat"><span class="label">Duration</span><span id="gl-duration" class="value">—</span></div>
+        <div class="stat"><span class="label">Uptime</span><span id="gl-uptime" class="value">—</span></div>
+        <div class="stat"><span class="label">Running</span><span id="gl-running" class="value">—</span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-world">
+      <div class="panel-header">World State</div>
+      <div class="panel-body">
+        <div class="stat"><span class="label">Game Time</span><span id="ws-gametime" class="value">—</span></div>
+        <div class="stat"><span class="label">Periodo</span><span id="ws-period" class="value">—</span></div>
+        <div class="stat"><span class="label">World Tick</span><span id="ws-tick" class="value">—</span></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-connections">
+      <div class="panel-header">Connections <span id="conn-count" class="badge">0</span></div>
+      <div class="panel-body panel-log" id="conn-log"></div>
+    </section>
+
+    <section class="panel" id="panel-events">
+      <div class="panel-header">Event Log</div>
+      <div class="panel-body panel-log" id="event-log"></div>
+    </section>
+  </main>
+
+  <footer id="console">
+    <span class="prompt">&gt;</span>
+    <input type="text" id="cmd-input" placeholder="Digite um comando (/help para lista)" autocomplete="off" spellcheck="false">
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

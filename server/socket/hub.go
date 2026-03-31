@@ -10,6 +10,12 @@ import (
 	"github.com/coder/websocket"
 )
 
+// LobbyObserver recebe notificações de eventos do lobby (join, leave, chat, etc).
+// O admin hub implementa esta interface para observar tudo que acontece.
+type LobbyObserver interface {
+	NotifyLobby(eventType string, data any)
+}
+
 // Hub é o coordenador central das conexões websocket do lobby.
 // Ele recebe entradas por canais e processa tudo em uma única goroutine (Run),
 // evitando locks explícitos para o mapa de clients.
@@ -20,6 +26,8 @@ type Hub struct {
 	clients    map[*Client]struct{}
 	// online guarda uma cópia atômica do total para leitura fora da goroutine Run.
 	online atomic.Int64
+	// observer recebe notificações de eventos do lobby (nil = sem observer).
+	observer LobbyObserver
 }
 
 // NewHub inicializa filas e o conjunto de clientes conectados.
@@ -50,20 +58,28 @@ func (h *Hub) Run(ctx context.Context) {
 			// Novo jogador entra no lobby.
 			h.clients[client] = struct{}{}
 			h.online.Store(int64(len(h.clients)))
-			h.emitSystem("player_joined", map[string]any{
+			data := map[string]any{
 				"player": client.name,
 				"online": len(h.clients),
-			})
+			}
+			h.emitSystem("player_joined", data)
+			if h.observer != nil {
+				h.observer.NotifyLobby("player_joined", data)
+			}
 		case client := <-h.unregister:
 			// Remoção idempotente: só remove se ainda estiver no mapa.
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 				h.online.Store(int64(len(h.clients)))
-				h.emitSystem("player_left", map[string]any{
+				data := map[string]any{
 					"player": client.name,
 					"online": len(h.clients),
-				})
+				}
+				h.emitSystem("player_left", data)
+				if h.observer != nil {
+					h.observer.NotifyLobby("player_left", data)
+				}
 			}
 		case message := <-h.broadcast:
 			// Fan-out: replica a mensagem para todos os clientes conectados.
@@ -108,6 +124,12 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// readPump bloqueia aqui — quando a conexão cai, ServeWS retorna.
 	// r.Context() fica vivo enquanto ServeWS estiver rodando.
 	client.readPump(r.Context())
+}
+
+// SetObserver registra um observer que será notificado de eventos do lobby.
+// Deve ser chamado antes de Run (no startup).
+func (h *Hub) SetObserver(obs LobbyObserver) {
+	h.observer = obs
 }
 
 // OnlineCount devolve o total de conectados de forma thread-safe.

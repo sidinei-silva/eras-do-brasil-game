@@ -206,6 +206,13 @@ func (g *GameLoop) Stop() {
 	slog.Info("Game loop stopped")
 }
 
+// SetPublisher define o publisher após a criação do game loop.
+// Útil quando há dependência circular no wiring (ex: admin hub precisa do gameLoop,
+// mas o gameLoop precisa do publisher que inclui o admin hub).
+func (g *GameLoop) SetPublisher(p SnapshotPublisher) {
+	g.publisher = p
+}
+
 // Status retorna um snapshot do estado atual do loop.
 // Uma "fotografia" que é thread-safe (segura para ler de múltiplas goroutines).
 func (g *GameLoop) Status() Status {

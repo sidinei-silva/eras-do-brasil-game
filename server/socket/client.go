@@ -142,14 +142,22 @@ func (c *Client) handleInbound(in InboundEvent) {
 		old := c.name
 		c.name = name
 		c.sendJSON(OutboundEvent{Type: "name_updated", Data: map[string]string{"name": c.name}})
-		c.hub.Broadcast(OutboundEvent{Type: "player_renamed", Data: map[string]string{"from": old, "to": c.name}})
+		renameData := map[string]string{"from": old, "to": c.name}
+		c.hub.Broadcast(OutboundEvent{Type: "player_renamed", Data: renameData})
+		if c.hub.observer != nil {
+			c.hub.observer.NotifyLobby("player_renamed", renameData)
+		}
 	case "chat":
 		// Publica mensagem de chat para todos conectados.
 		body := strings.TrimSpace(in.Body)
 		if body == "" {
 			return
 		}
-		c.hub.Broadcast(OutboundEvent{Type: "chat", Data: map[string]string{"from": c.name, "body": body}})
+		chatData := map[string]string{"from": c.name, "body": body}
+		c.hub.Broadcast(OutboundEvent{Type: "chat", Data: chatData})
+		if c.hub.observer != nil {
+			c.hub.observer.NotifyLobby("chat", chatData)
+		}
 	default:
 		c.sendJSON(OutboundEvent{Type: "error", Data: "unknown_event_type"})
 	}
