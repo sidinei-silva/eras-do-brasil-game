@@ -69,10 +69,10 @@ func (c *Client) readPump(ctx context.Context) {
 	c.conn.SetReadLimit(maxMessageSize)
 
 	for {
-		// Renova o deadline a cada mensagem recebida — equivalente ao pong handler do gorilla.
-		readCtx, cancel := context.WithTimeout(ctx, pongWait)
-		_, message, err := c.conn.Read(readCtx)
-		cancel()
+		// Usa o ctx do request (sem timeout por mensagem).
+		// A detecção de conexão morta é feita pelo writePump via Ping periódico:
+		// se Ping falha → writePump sai → CloseNow() → Read retorna erro aqui.
+		_, message, err := c.conn.Read(ctx)
 		if err != nil {
 			status := websocket.CloseStatus(err)
 			if status != websocket.StatusNormalClosure && status != websocket.StatusGoingAway {
