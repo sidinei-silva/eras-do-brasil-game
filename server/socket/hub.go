@@ -7,26 +7,18 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	// CheckOrigin controla se o browser pode abrir WS a partir de outra origem.
-	// Na fase inicial, aceitamos tudo para facilitar testes locais.
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// Hub e o coordenador central das conexoes websocket do lobby.
-// Ele recebe entradas por canais e processa tudo em uma unica goroutine (Run),
-// evitando locks explicitos para o mapa de clients.
+// Hub é o coordenador central das conexões websocket do lobby.
+// Ele recebe entradas por canais e processa tudo em uma única goroutine (Run),
+// evitando locks explícitos para o mapa de clients.
 type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan []byte
 	clients    map[*Client]struct{}
-	// online guarda uma copia atomica do total para leitura fora da goroutine Run.
+	// online guarda uma cópia atômica do total para leitura fora da goroutine Run.
 	online atomic.Int64
 }
 
@@ -40,16 +32,16 @@ func NewHub() *Hub {
 	}
 }
 
-// Run e o loop principal do Hub.
-// Toda mutacao em clients acontece aqui para manter consistencia de estado.
+// Run é o loop principal do Hub.
+// Toda mutação em clients acontece aqui para manter consistência de estado.
 func (h *Hub) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Shutdown gracioso: fecha canais de envio e conexoes abertas.
+			// Shutdown gracioso: fecha canais de envio e força fechamento das conexões.
 			for client := range h.clients {
 				close(client.send)
-				_ = client.conn.Close()
+				client.conn.CloseNow()
 				delete(h.clients, client)
 			}
 			h.online.Store(0)
@@ -63,7 +55,7 @@ func (h *Hub) Run(ctx context.Context) {
 				"online": len(h.clients),
 			})
 		case client := <-h.unregister:
-			// Remocao idempotente: so remove se ainda estiver no mapa.
+			// Remoção idempotente: só remove se ainda estiver no mapa.
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
@@ -82,34 +74,40 @@ func (h *Hub) Run(ctx context.Context) {
 				default:
 					close(client.send)
 					delete(h.clients, client)
-					_ = client.conn.Close()
+					client.conn.CloseNow()
 				}
 			}
 		}
 	}
 }
 
-// ServeWS faz o upgrade HTTP -> WebSocket e cria uma sessao Client.
+// ServeWS faz o upgrade HTTP → WebSocket e cria uma sessão Client.
+// Bloqueia até a conexão ser encerrada — o goroutine do HTTP handler é o readPump.
 func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		// Aceita conexões de qualquer origem para facilitar testes locais.
+		InsecureSkipVerify: true,
+	})
 	if err != nil {
 		slog.Error("websocket upgrade failed", "error", err)
 		return
 	}
 
 	client := NewClient(h, conn)
-	// Evita bloquear a thread HTTP em caso de saturacao de fila.
+	// Evita bloquear a thread HTTP em caso de saturação de fila.
 	select {
 	case h.register <- client:
 	default:
 		slog.Warn("hub register queue full")
-		_ = conn.Close()
+		_ = conn.Close(websocket.StatusTryAgainLater, "server busy")
 		return
 	}
 
-	// Cada conexao ganha duas goroutines: leitura e escrita.
-	go client.writePump()
-	go client.readPump()
+	// writePump roda em goroutine separada (envia mensagens de saída).
+	go client.writePump(r.Context())
+	// readPump bloqueia aqui — quando a conexão cai, ServeWS retorna.
+	// r.Context() fica vivo enquanto ServeWS estiver rodando.
+	client.readPump(r.Context())
 }
 
 // OnlineCount devolve o total de conectados de forma thread-safe.
@@ -118,13 +116,19 @@ func (h *Hub) OnlineCount() int {
 }
 
 // Broadcast serializa um evento e enfileira para envio coletivo no loop do Hub.
+// Usa select/default para nunca bloquear — importante porque emitSystem chama Broadcast
+// de dentro de hub.Run, que é o único consumidor do canal. Bloquear seria deadlock.
 func (h *Hub) Broadcast(event OutboundEvent) {
 	b, err := json.Marshal(event)
 	if err != nil {
 		slog.Error("failed to marshal broadcast event", "error", err)
 		return
 	}
-	h.broadcast <- b
+	select {
+	case h.broadcast <- b:
+	default:
+		slog.Warn("broadcast channel full, dropping message", "type", event.Type)
+	}
 }
 
 // emitSystem envia eventos internos do lobby (join/leave etc).

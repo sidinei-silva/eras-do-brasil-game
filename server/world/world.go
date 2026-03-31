@@ -96,6 +96,15 @@ func (w *World) Snapshot() Snapshot {
 	}
 }
 
+// Períodos do dia — nomes canônicos em português, alinhados com o GDD.
+// Usar estas constantes em vez de strings literais evita typos e facilita busca no código.
+const (
+	PeriodoManha     = "Manha"     // 06:00 – 11:59
+	PeriodoTarde     = "Tarde"     // 12:00 – 17:59
+	PeriodoNoite     = "Noite"     // 18:00 – 21:59
+	PeriodoMadrugada = "Madrugada" // 22:00 – 05:59
+)
+
 // getPeriod retorna qual período do dia é, baseado na hora (0-23).
 // Não tem receiver (não está acoplado a World), então é uma função simples.
 func getPeriod(h int) string {
@@ -103,12 +112,12 @@ func getPeriod(h int) string {
 	// case = "se o valor for isto, faça aquilo".
 	switch {
 	case h >= 6 && h < 12:
-		return "Morning"
+		return PeriodoManha
 	case h >= 12 && h < 18:
-		return "Afternoon"
+		return PeriodoTarde
 	case h >= 18 && h < 22:
-		return "Evening"
-	default:
-		return "Night"
+		return PeriodoNoite
+	default: // 22-05
+		return PeriodoMadrugada
 	}
 }

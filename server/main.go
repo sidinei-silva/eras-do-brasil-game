@@ -33,6 +33,20 @@ func (se *ServerError) Unwrap() error {
 	return se.Err
 }
 
+// hubPublisher adapta o Hub para implementar engine.SnapshotPublisher.
+// Isso mantém o pacote engine sem dependência do pacote socket.
+type hubPublisher struct {
+	hub *socket.Hub
+}
+
+// Publish recebe um snapshot do game loop e faz broadcast para todos os clientes.
+func (p *hubPublisher) Publish(snap world.Snapshot) {
+	p.hub.Broadcast(socket.OutboundEvent{
+		Type: "world_snapshot",
+		Data: snap,
+	})
+}
+
 // main() é a função de entrada do programa.
 // Quando você executa `go run main.go`, Go procura por uma função main() em package main.
 func main() {
@@ -54,10 +68,13 @@ func main() {
 	// Todas as mudanças ao mundo afetam o original, não uma cópia.
 	mundo := world.NewWorld()
 
+	hub := socket.NewHub()
+	go hub.Run(ctx)
+
 	// Cria o game loop com intervalo de 500 milissegundos entre cada tick.
-	// time.Millisecond = constante que Go oferece (1 ms = 0,001 seg).
-	// Então 500 * time.Millisecond = 500 ms = 0,5 segundos entre ticks.
-	loop := engine.NewGameLoop(500*time.Millisecond, mundo)
+	// hubPublisher conecta o game loop ao hub sem criar dependência circular entre pacotes.
+	// O broadcast acontece DENTRO do tick, após todo processamento — sem race condition.
+	loop := engine.NewGameLoop(500*time.Millisecond, mundo, &hubPublisher{hub: hub})
 
 	// go loop.Start(ctx) = cria uma GOROUTINE (thread leve) que roda loop.Start().
 	// "go" = execute isto em paralelo, não bloqueie aqui.
@@ -67,26 +84,6 @@ func main() {
 	// ctx é o contexto que se cancela se Ctrl+C ou SIGTERM.
 	// Quando ctx é cancelado, loop.Start() vê <-ctx.Done() e sai.
 	go loop.Start(ctx)
-
-	hub := socket.NewHub()
-	go hub.Run(ctx)
-
-	go func() {
-		ticker := time.NewTicker(500 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				hub.Broadcast(socket.OutboundEvent{
-					Type: "world_snapshot",
-					Data: mundo.Snapshot(),
-				})
-			}
-		}
-	}()
 
 	// Define um endpoint HTTP que retorna status em JSON.
 	// http.HandleFunc(caminho, função_handler) = "quando alguém acessar caminho, chame a função".
@@ -117,11 +114,12 @@ func main() {
 	http.HandleFunc("/ws", socket.WsHandler(hub))
 
 	// http.Server = configuração do servidor HTTP.
-	// &http.Server{} = cria uma nova instância (& = endereço).
+	// WriteTimeout é omitido: ele mataria conexões WebSocket longas (que ficam abertas
+	// por minutos/horas). O controle de timeout por escrita é feito por conexão
+	// via context.WithTimeout dentro do writePump de cada cliente.
 	server := &http.Server{
-		Addr:         ":8080",         // porta 8080 (http://localhost:8080)
-		ReadTimeout:  5 * time.Second, // máximo 5 segundos para cliente enviar requisição completa
-		WriteTimeout: 5 * time.Second, // máximo 5 segundos para servidor enviar resposta completa
+		Addr:        ":8080",
+		ReadTimeout: 5 * time.Second,
 	}
 
 	// go func() { ... }() = cria uma goroutine com uma função anônima (sem nome).

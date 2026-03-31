@@ -21,6 +21,12 @@ type Status struct {
 	LastTickDuration time.Duration `json:"last_tick_duration"` // quanto tempo o último tick levou
 }
 
+// SnapshotPublisher é a interface que o GameLoop usa para publicar o estado pós-tick.
+// Qualquer tipo que implemente Publish pode receber snapshots — sem dependência de socket.
+type SnapshotPublisher interface {
+	Publish(snap world.Snapshot)
+}
+
 // GameLoop é o orquestrador central do jogo.
 // Ele processa ticks em intervalo fixo e coordena o processamento do mundo.
 type GameLoop struct {
@@ -31,6 +37,10 @@ type GameLoop struct {
 	// * = é um endereço de memória, não uma cópia. Se alterar world, altera o original.
 	// Se fosse só `world world.World`, seria uma cópia, e mudanças não afetariam o original.
 	world *world.World
+
+	// publisher: destino dos snapshots pós-tick (ex: hub WebSocket).
+	// nil = sem publicação (útil em testes).
+	publisher SnapshotPublisher
 
 	// running: ATOMIC BOOL = booleano "thread-safe".
 	// "thread-safe" = múltiplas goroutines podem ler/escrever sem corromper dados.
@@ -66,10 +76,12 @@ type GameLoop struct {
 // NewGameLoop cria uma nova instância do game loop.
 // Retorna um PONTEIRO (*GameLoop) porque o loop é "mortal" — vive enquanto o programa roda.
 // Se retornasse cópia, mudanças ao loop não afetariam outras goroutines.
-func NewGameLoop(interval time.Duration, world *world.World) *GameLoop {
+// publisher recebe o snapshot após cada tick — pode ser nil.
+func NewGameLoop(interval time.Duration, world *world.World, publisher SnapshotPublisher) *GameLoop {
 	return &GameLoop{
-		interval: interval,
-		world:    world,
+		interval:  interval,
+		world:     world,
+		publisher: publisher,
 	}
 }
 
@@ -139,8 +151,15 @@ func (g *GameLoop) Start(ctx context.Context) {
 			start := time.Now()
 
 			// Chama ProcessTick() do mundo = avança o jogo em 1 ciclo.
-			// world é um PONTEIRO, então quando isso chama w.mu.Lock(), afeta o ESTADO COMPARTILHADO.
-			g.world.ProcessTick()
+			// Usa o snapshot retornado — é o estado exato pós-tick, sem race condition.
+			snap := g.world.ProcessTick()
+
+			// Publica o snapshot para clientes WebSocket, se houver publisher.
+			// Isso garante que o broadcast acontece APÓS todo o processamento do tick
+			// (seguindo o ADR-005 — future managers como NPC vão antes desta linha).
+			if g.publisher != nil {
+				g.publisher.Publish(snap)
+			}
 
 			// Incrementa o contador de ticks de forma ATÔMICA.
 			// Add(1) = adiciona 1 e retorna o novo valor (sem necessidade de lock).

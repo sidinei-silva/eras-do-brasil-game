@@ -1,21 +1,22 @@
 package socket
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/coder/websocket"
 )
 
 const (
-	// writeWait define timeout maximo para uma escrita no socket.
+	// writeWait define timeout máximo para uma escrita no socket.
 	writeWait = 10 * time.Second
 	// pongWait define quanto tempo aceitamos ficar sem receber pong.
 	pongWait = 60 * time.Second
-	// pingPeriod e menor que pongWait para manter conexao viva.
+	// pingPeriod é menor que pongWait para manter conexão viva.
 	pingPeriod = (pongWait * 9) / 10
 	// maxMessageSize protege contra payloads grandes demais no lobby.
 	maxMessageSize = 1024
@@ -34,16 +35,16 @@ type OutboundEvent struct {
 	Data any    `json:"data,omitempty"`
 }
 
-// Client modela uma sessao websocket ativa no lobby.
+// Client modela uma sessão websocket ativa no lobby.
 type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
-	// send e a fila de saida consumida apenas pelo writePump.
+	// send é a fila de saída consumida apenas pelo writePump.
 	send chan []byte
 	name string
 }
 
-// NewClient cria uma sessao com nome temporario ate o jogador definir o proprio nome.
+// NewClient cria uma sessão com nome temporário até o jogador definir o próprio nome.
 func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	return &Client{
 		hub:  hub,
@@ -53,30 +54,28 @@ func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	}
 }
 
-// readPump e responsavel por ler mensagens da conexao e traduzi-las para comandos.
-// Regra importante: somente readPump le da conexao.
-func (c *Client) readPump() {
+// readPump é responsável por ler mensagens da conexão e traduzi-las para comandos.
+// Regra importante: somente readPump lê da conexão.
+func (c *Client) readPump(ctx context.Context) {
 	defer func() {
 		// Tenta remover do Hub sem bloquear em caso de shutdown.
 		select {
 		case c.hub.unregister <- c:
 		default:
 		}
-		_ = c.conn.Close()
+		c.conn.CloseNow()
 	}()
 
-	// Limites e deadlines para robustez de conexao.
 	c.conn.SetReadLimit(maxMessageSize)
-	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error {
-		return c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	})
 
 	for {
-		_, message, err := c.conn.ReadMessage()
+		// Renova o deadline a cada mensagem recebida — equivalente ao pong handler do gorilla.
+		readCtx, cancel := context.WithTimeout(ctx, pongWait)
+		_, message, err := c.conn.Read(readCtx)
+		cancel()
 		if err != nil {
-			// Fechamento inesperado vira warning para facilitar diagnostico.
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			status := websocket.CloseStatus(err)
+			if status != websocket.StatusNormalClosure && status != websocket.StatusGoingAway {
 				slog.Warn("unexpected websocket close", "error", err)
 			}
 			break
@@ -84,7 +83,7 @@ func (c *Client) readPump() {
 
 		var in InboundEvent
 		if err := json.Unmarshal(message, &in); err != nil {
-			// Mensagem invalida nao derruba conexao; so responde erro.
+			// Mensagem inválida não derruba conexão; só responde erro.
 			c.sendJSON(OutboundEvent{Type: "error", Data: "invalid_json"})
 			continue
 		}
@@ -93,39 +92,44 @@ func (c *Client) readPump() {
 	}
 }
 
-// writePump e responsavel por enviar mensagens para o socket e manter heartbeat ping/pong.
-// Regra importante: somente writePump escreve na conexao.
-func (c *Client) writePump() {
+// writePump é responsável por enviar mensagens para o socket e manter heartbeat ping/pong.
+// Regra importante: somente writePump escreve na conexão.
+func (c *Client) writePump(ctx context.Context) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		_ = c.conn.Close()
+		c.conn.CloseNow()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.send:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// Canal fechado indica que sessao foi encerrada pelo Hub.
-				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				// Canal fechado pelo shutdown do Hub — não precisa fechar explicitamente,
+				// o defer CloseNow() cuida disso.
 				return
 			}
-
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			writeCtx, cancel := context.WithTimeout(ctx, writeWait)
+			err := c.conn.Write(writeCtx, websocket.MessageText, message)
+			cancel()
+			if err != nil {
 				return
 			}
 		case <-ticker.C:
-			// Ping periodico evita conexao zumbi atras de NAT/proxy.
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			// Ping periódico evita conexão zumbi atrás de NAT/proxy.
+			pingCtx, cancel := context.WithTimeout(ctx, writeWait)
+			err := c.conn.Ping(pingCtx)
+			cancel()
+			if err != nil {
 				return
 			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }
 
-// handleInbound implementa os comandos basicos do lobby.
+// handleInbound implementa os comandos básicos do lobby.
 func (c *Client) handleInbound(in InboundEvent) {
 	switch strings.ToLower(strings.TrimSpace(in.Type)) {
 	case "set_name":
@@ -151,7 +155,7 @@ func (c *Client) handleInbound(in InboundEvent) {
 	}
 }
 
-// sendJSON enfileira uma resposta para envio assinc via writePump.
+// sendJSON enfileira uma resposta para envio assíncrono via writePump.
 func (c *Client) sendJSON(event OutboundEvent) {
 	b, err := json.Marshal(event)
 	if err != nil {
@@ -162,5 +166,8 @@ func (c *Client) sendJSON(event OutboundEvent) {
 	select {
 	case c.send <- b:
 	default:
+		// Buffer cheio = cliente muito lento para processar respostas.
+		// Mensagem descartada por backpressure — o hub remove o cliente se persistir.
+		slog.Warn("client send buffer full, dropping message", "client", c.name, "type", event.Type)
 	}
 }

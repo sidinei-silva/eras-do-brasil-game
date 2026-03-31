@@ -6,13 +6,13 @@
 
 ---
 
-## Fase 0 — Heartbeat 🟡
+## Fase 0 — Heartbeat ✅
 
 - [x] `go mod init` + estrutura de pastas (`server/`, `world/`, `engine/`, etc.)
 - [x] `main.go` com game loop sequencial (`time.Ticker` + goroutine)
 - [x] Struct `Mundo` em `world/mundo.go` com `ProcessarTick()`
-- [ ] WebSocket listener (`websocket`) — cliente HTML recebe ticks
-- [ ] Admin v0: status, estado do game loop, uptime
+- [x] WebSocket listener (`coder/websocket`) — cliente HTML recebe ticks via `world_snapshot`
+- [x] Admin v0: `/admin/status` retorna status do game loop, uptime e online count
 
 ## Fase 1 — Mundo Vivo
 
