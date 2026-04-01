@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/npc"
 )
 
 // Snapshot é a fotografia do estado do mundo em um momento.
@@ -30,6 +32,7 @@ type World struct {
 	gameTime time.Time
 
 	WorldMap *WorldMap
+	NPCs     *npc.Registry
 }
 
 // NewWorld cria uma nova instância do mundo.
@@ -40,16 +43,20 @@ func NewWorld() *World {
 
 	gameMap, err := LoadMataCosteira()
 	if err != nil {
-		// O mapa é dado fundamental — sem ele o mundo não faz sentido.
-		// panic() em inicialização é aceitável em Go para falhas irrecuperáveis.
 		panic(fmt.Sprintf("failed to load game map: %v", err))
 	}
-
 	slog.Info("Game map loaded", slog.String("region", gameMap.RegionName), slog.Int("zones", len(gameMap.Zones())))
+
+	npcs, err := npc.LoadMataCosteira()
+	if err != nil {
+		panic(fmt.Sprintf("failed to load NPCs: %v", err))
+	}
+	slog.Info("NPCs loaded", slog.Int("count", npcs.Count()))
 
 	return &World{
 		gameTime: time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC),
 		WorldMap: gameMap,
+		NPCs:     npcs,
 	}
 }
 
@@ -71,21 +78,19 @@ func (w *World) ProcessTick() Snapshot {
 	// Incrementa o contador de ticks do jogo.
 	// w.tick++ = "pegue o valor de w.tick, some 1, e guarde de volta".
 	w.tick++
-
-	// Avança o relógio do jogo em 1 minuto.
-	// w.gameTime.Add() = retorna um novo time, adicionando duração.
-	// 1 * time.Minute = 1 minuto (é uma constante que Go oferece).
 	w.gameTime = w.gameTime.Add(1 * time.Minute)
+	period := getPeriod(w.gameTime.Hour())
 
-	// Log para debug (vê no terminal o que está acontecendo).
+	// Processa todos os NPCs neste tick.
+	// Os NPCs estão protegidos pelo mesmo mutex do World — acesso seguro.
+	w.NPCs.ProcessTick(period)
+
 	slog.Info("Processing tick", slog.Uint64("tick", w.tick))
 
-	// Retorna uma fotografia do estado ATUAL do mundo (depois de atualizar).
-	// Como estamos dentro de Lock/Unlock, é seguro ler os dados agora.
 	return Snapshot{
 		Tick:      w.tick,
 		GameTime:  w.gameTime,
-		Period:    getPeriod(w.gameTime.Hour()),
+		Period:    period,
 		UpdatedAt: time.Now().UTC(),
 	}
 }
