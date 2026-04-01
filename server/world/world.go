@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -27,6 +28,8 @@ type World struct {
 
 	// gameTime: a hora atual dentro do jogo (aumenta a cada tick).
 	gameTime time.Time
+
+	WorldMap *WorldMap
 }
 
 // NewWorld cria uma nova instância do mundo.
@@ -35,10 +38,18 @@ type World struct {
 func NewWorld() *World {
 	slog.Info("Creating new world")
 
-	// & = "endereço de" = pega o endereço de memória desse objeto World novo
-	// retorna um ponteiro para ele (ou seja, um endereço de memória, não uma cópia).
+	gameMap, err := LoadMataCosteira()
+	if err != nil {
+		// O mapa é dado fundamental — sem ele o mundo não faz sentido.
+		// panic() em inicialização é aceitável em Go para falhas irrecuperáveis.
+		panic(fmt.Sprintf("failed to load game map: %v", err))
+	}
+
+	slog.Info("Game map loaded", slog.String("region", gameMap.RegionName), slog.Int("zones", len(gameMap.Zones())))
+
 	return &World{
-		gameTime: time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC), // Começa em 1500-01-01 06:00
+		gameTime: time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC),
+		WorldMap: gameMap,
 	}
 }
 
