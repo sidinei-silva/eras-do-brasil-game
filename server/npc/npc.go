@@ -93,6 +93,31 @@ func (n *NPC) ProcessTick(period string) {
 	n.currentActivity = entry.Activity
 }
 
+// NPCState é um snapshot read-only do estado atual de um NPC.
+// Exportamos um struct separado (em vez de tornar os campos do NPC públicos)
+// pelo mesmo motivo que World tem Snapshot: quem lê não precisa do mutex,
+// e quem escreve não expõe acidentalmente campos internos de controle.
+type NPCState struct {
+	ID       string   `json:"id"`
+	Name     string   `json:"name"`
+	ZoneID   string   `json:"zone_id"`
+	Activity Activity `json:"activity"`
+	Needs    Needs    `json:"needs"`
+}
+
+// State retorna um snapshot do estado atual do NPC.
+// Não precisa de mutex aqui porque NPC é sempre acessado dentro do
+// mutex do World (em ProcessTick e em leituras via Snapshot).
+func (n *NPC) State() NPCState {
+	return NPCState{
+		ID:       n.ID,
+		Name:     n.Name,
+		ZoneID:   n.CurrentZoneID,
+		Activity: n.currentActivity,
+		Needs:    n.Needs,
+	}
+}
+
 // clamp garante que v fique entre min e max.
 // Função auxiliar privada — usada apenas dentro do pacote npc.
 // Go não tem função clamp na stdlib para float64 (só a partir do Go 1.21 tem em math).

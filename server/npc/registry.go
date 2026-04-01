@@ -49,3 +49,23 @@ func (r *Registry) Get(id string) (*NPC, bool) {
 func (r *Registry) Count() int {
 	return len(r.npcs)
 }
+
+// AllStates retorna um snapshot do estado de todos os NPCs.
+// Usado pelo admin para inspecionar o mundo sem expor ponteiros internos.
+func (r *Registry) AllStates() []NPCState {
+	result := make([]NPCState, 0, len(r.npcs))
+	for _, n := range r.npcs {
+		result = append(result, n.State())
+	}
+	return result
+}
+
+// State retorna o estado de um NPC específico pelo ID.
+// O bool indica se o NPC foi encontrado.
+func (r *Registry) State(id string) (NPCState, bool) {
+	n, ok := r.npcs[id]
+	if !ok {
+		return NPCState{}, false
+	}
+	return n.State(), true
+}

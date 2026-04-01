@@ -14,6 +14,10 @@ const dom = {
   wsGametime: document.getElementById("ws-gametime"),
   wsPeriod: document.getElementById("ws-period"),
   wsTick: document.getElementById("ws-tick"),
+  // NPC panel
+  npcList: document.getElementById("npc-list"),
+  npcCount: document.getElementById("npc-count"),
+  npcRefresh: document.getElementById("npc-refresh"),
   // Connections panel
   connCount: document.getElementById("conn-count"),
   connLog: document.getElementById("conn-log"),
@@ -187,7 +191,45 @@ function handleCommandResponse(type, data, ts) {
     dom.connCount.textContent = data.online;
   }
 
+  if (type === "npcs" && data && data.npcs) {
+    renderNPCs(data.npcs);
+  }
+
+  if (type === "npc" && data) {
+    renderNPCs([data]);
+  }
+
   // Command output goes to event log (already handled above).
+}
+
+// --- NPC panel ---
+function renderNPCs(npcs) {
+  dom.npcCount.textContent = npcs.length;
+  dom.npcList.innerHTML = "";
+
+  npcs.forEach((npc) => {
+    const hunger  = npc.needs?.Hunger  ?? 0;
+    const fatigue = npc.needs?.Fatigue ?? 0;
+
+    const row = document.createElement("div");
+    row.className = "npc-row";
+    row.innerHTML =
+      `<span class="npc-name">${escapeHtml(npc.name)}</span>` +
+      `<span class="npc-zone">${escapeHtml(npc.zone_id)}</span>` +
+      `<span class="npc-activity">${escapeHtml(npc.activity)}</span>` +
+      `<span class="need-bar">` +
+        `<span class="need-label">fome</span>` +
+        `<span class="need-track"><span class="need-fill need-fill-hunger${hunger > 0.75 ? " need-critical" : ""}" style="width:${(hunger * 100).toFixed(1)}%"></span></span>` +
+        `<span class="need-label" style="width:32px;text-align:right">${(hunger * 100).toFixed(0)}%</span>` +
+      `</span>` +
+      `<span class="need-bar">` +
+        `<span class="need-label">cansaço</span>` +
+        `<span class="need-track"><span class="need-fill need-fill-fatigue${fatigue > 0.75 ? " need-critical" : ""}" style="width:${(fatigue * 100).toFixed(1)}%"></span></span>` +
+        `<span class="need-label" style="width:32px;text-align:right">${(fatigue * 100).toFixed(0)}%</span>` +
+      `</span>`;
+
+    dom.npcList.appendChild(row);
+  });
 }
 
 // --- Console input ---
@@ -256,6 +298,15 @@ function formatData(type, data) {
       return `tick=${data.tick} time=${data.game_time} period=${data.period}`;
     case "players":
       return `online: ${data.online}`;
+    case "npcs":
+      if (data.npcs) {
+        return data.npcs.map(n =>
+          `${n.name} → ${n.zone_id} [${n.activity}]`
+        ).join(" | ");
+      }
+      return JSON.stringify(data);
+    case "npc":
+      return `${data.name} → ${data.zone_id} [${data.activity}] fome=${(data.needs?.Hunger * 100).toFixed(0)}% cansaço=${(data.needs?.Fatigue * 100).toFixed(0)}%`;
     case "error":
       return data.error || JSON.stringify(data);
     default:
@@ -300,6 +351,12 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+// --- NPC refresh button ---
+dom.npcRefresh.addEventListener("click", () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ command: "/npcs" }));
+});
 
 // --- Start ---
 connect();

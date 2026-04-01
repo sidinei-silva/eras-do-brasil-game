@@ -94,7 +94,7 @@ func main() {
 	})
 
 	// Serve arquivos estáticos do admin client.
-	adminFS := http.FileServer(http.Dir("../adminClient"))
+	adminFS := http.FileServer(http.Dir("../client/adminClient"))
 	http.Handle("/admin/", http.StripPrefix("/admin/", adminFS))
 
 	server := &http.Server{
