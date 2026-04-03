@@ -16,7 +16,6 @@ import (
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
-// ServerError é um tipo de erro customizado (não obrigatório, mas bom para debug).
 type ServerError struct {
 	Message string
 	Err     error
@@ -30,7 +29,6 @@ func (se *ServerError) Unwrap() error {
 	return se.Err
 }
 
-// hubPublisher adapta o player Hub para implementar engine.SnapshotPublisher.
 type hubPublisher struct {
 	hub *socket.Hub
 }
@@ -46,28 +44,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	// --- World ---
 	mundo := world.NewWorld()
 
-	// --- Player Hub ---
 	playerHub := socket.NewHub()
 	go playerHub.Run(ctx)
 
-	// --- Game Loop ---
-	// O admin hub precisa do gameLoop, mas o gameLoop precisa do publisher.
-	// Criamos o gameLoop primeiro com publisher nil, depois setamos.
 	loop := engine.NewGameLoop(500*time.Millisecond, mundo, nil)
 
-	// --- Admin Hub ---
 	adminHub := admin.NewHub(loop, mundo, playerHub.OnlineCount)
 
-	// O player hub notifica o admin de eventos (join, leave, chat, rename).
 	playerHub.SetObserver(adminHub)
 
 	go adminHub.Run(ctx)
 
-	// --- Wiring do publisher ---
-	// MultiPublisher envia snapshots para player hub E admin hub.
 	multi := engine.NewMultiPublisher(
 		&hubPublisher{hub: playerHub},
 		adminHub,
@@ -76,7 +65,6 @@ func main() {
 
 	go loop.Start(ctx)
 
-	// --- HTTP Routes ---
 	http.HandleFunc("/admin/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -93,7 +81,6 @@ func main() {
 		adminHub.ServeWS(w, r)
 	})
 
-	// Serve arquivos estáticos do admin client.
 	adminFS := http.FileServer(http.Dir("../client/adminClient"))
 	http.Handle("/admin/", http.StripPrefix("/admin/", adminFS))
 

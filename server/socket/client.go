@@ -12,39 +12,30 @@ import (
 )
 
 const (
-	// writeWait define timeout máximo para uma escrita no socket.
-	writeWait = 10 * time.Second
-	// pongWait define quanto tempo aceitamos ficar sem receber pong.
-	pongWait = 60 * time.Second
-	// pingPeriod é menor que pongWait para manter conexão viva.
-	pingPeriod = (pongWait * 9) / 10
-	// maxMessageSize protege contra payloads grandes demais no lobby.
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 1024
 )
 
-// InboundEvent representa mensagens recebidas do cliente web.
 type InboundEvent struct {
 	Type string `json:"type"`
 	Body string `json:"body,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
-// OutboundEvent representa mensagens enviadas pelo servidor ao cliente.
 type OutboundEvent struct {
 	Type string `json:"type"`
 	Data any    `json:"data,omitempty"`
 }
 
-// Client modela uma sessão websocket ativa no lobby.
 type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
-	// send é a fila de saída consumida apenas pelo writePump.
 	send chan []byte
 	name string
 }
 
-// NewClient cria uma sessão com nome temporário até o jogador definir o próprio nome.
 func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	return &Client{
 		hub:  hub,
@@ -54,11 +45,8 @@ func NewClient(hub *Hub, conn *websocket.Conn) *Client {
 	}
 }
 
-// readPump é responsável por ler mensagens da conexão e traduzi-las para comandos.
-// Regra importante: somente readPump lê da conexão.
 func (c *Client) readPump(ctx context.Context) {
 	defer func() {
-		// Tenta remover do Hub sem bloquear em caso de shutdown.
 		select {
 		case c.hub.unregister <- c:
 		default:
@@ -69,9 +57,6 @@ func (c *Client) readPump(ctx context.Context) {
 	c.conn.SetReadLimit(maxMessageSize)
 
 	for {
-		// Usa o ctx do request (sem timeout por mensagem).
-		// A detecção de conexão morta é feita pelo writePump via Ping periódico:
-		// se Ping falha → writePump sai → CloseNow() → Read retorna erro aqui.
 		_, message, err := c.conn.Read(ctx)
 		if err != nil {
 			status := websocket.CloseStatus(err)
@@ -83,7 +68,6 @@ func (c *Client) readPump(ctx context.Context) {
 
 		var in InboundEvent
 		if err := json.Unmarshal(message, &in); err != nil {
-			// Mensagem inválida não derruba conexão; só responde erro.
 			c.sendJSON(OutboundEvent{Type: "error", Data: "invalid_json"})
 			continue
 		}
@@ -92,8 +76,6 @@ func (c *Client) readPump(ctx context.Context) {
 	}
 }
 
-// writePump é responsável por enviar mensagens para o socket e manter heartbeat ping/pong.
-// Regra importante: somente writePump escreve na conexão.
 func (c *Client) writePump(ctx context.Context) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -105,8 +87,6 @@ func (c *Client) writePump(ctx context.Context) {
 		select {
 		case message, ok := <-c.send:
 			if !ok {
-				// Canal fechado pelo shutdown do Hub — não precisa fechar explicitamente,
-				// o defer CloseNow() cuida disso.
 				return
 			}
 			writeCtx, cancel := context.WithTimeout(ctx, writeWait)
@@ -116,7 +96,6 @@ func (c *Client) writePump(ctx context.Context) {
 				return
 			}
 		case <-ticker.C:
-			// Ping periódico evita conexão zumbi atrás de NAT/proxy.
 			pingCtx, cancel := context.WithTimeout(ctx, writeWait)
 			err := c.conn.Ping(pingCtx)
 			cancel()
@@ -129,11 +108,9 @@ func (c *Client) writePump(ctx context.Context) {
 	}
 }
 
-// handleInbound implementa os comandos básicos do lobby.
 func (c *Client) handleInbound(in InboundEvent) {
 	switch strings.ToLower(strings.TrimSpace(in.Type)) {
 	case "set_name":
-		// Atualiza nome do jogador e notifica o lobby.
 		name := strings.TrimSpace(in.Name)
 		if name == "" {
 			c.sendJSON(OutboundEvent{Type: "error", Data: "name_required"})
@@ -148,7 +125,6 @@ func (c *Client) handleInbound(in InboundEvent) {
 			c.hub.observer.NotifyLobby("player_renamed", renameData)
 		}
 	case "chat":
-		// Publica mensagem de chat para todos conectados.
 		body := strings.TrimSpace(in.Body)
 		if body == "" {
 			return
@@ -163,7 +139,6 @@ func (c *Client) handleInbound(in InboundEvent) {
 	}
 }
 
-// sendJSON enfileira uma resposta para envio assíncrono via writePump.
 func (c *Client) sendJSON(event OutboundEvent) {
 	b, err := json.Marshal(event)
 	if err != nil {
@@ -174,8 +149,6 @@ func (c *Client) sendJSON(event OutboundEvent) {
 	select {
 	case c.send <- b:
 	default:
-		// Buffer cheio = cliente muito lento para processar respostas.
-		// Mensagem descartada por backpressure — o hub remove o cliente se persistir.
 		slog.Warn("client send buffer full, dropping message", "client", c.name, "type", event.Type)
 	}
 }
