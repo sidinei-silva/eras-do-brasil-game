@@ -1,91 +1,60 @@
-# Backlog — Eras do Brasil (Game)
+# Backlog — Eras do Brasil
 
-> Abra, veja a próxima tarefa, trabalhe nela.
-> Detalhes completos (AC, referências GDD, folder structure): [docs/GUIA_RETOMADA.md](docs/GUIA_RETOMADA.md)
-> Trilha de estudos Go e arquitetura: [estudos/README.md](estudos/README.md)
+> Reimplementacao do zero. Voce decide a ordem, a estrutura e o como.
+> Quando travar, pesque do commit `4d64406`.
 
 ---
 
-## Fase 0 — Heartbeat ✅
+## Fase 0 — Heartbeat
 
-- [x] `go mod init` + estrutura de pastas (`server/`, `world/`, `engine/`, etc.)
-- [x] `main.go` com game loop sequencial (`time.Ticker` + goroutine)
-- [x] Struct `Mundo` em `world/mundo.go` com `ProcessarTick()`
-- [x] WebSocket listener (`coder/websocket`) — cliente HTML recebe ticks via `world_snapshot`
-- [x] Admin v0: `/admin/status` retorna status do game loop, uptime e online count
+**Objetivo:** Servidor Go rodando com game loop que avanca o tempo do mundo. Clientes recebem estado via WebSocket.
+
+- [ ] Servidor HTTP escuta na porta 8080
+- [ ] Game loop roda em intervalo fixo, avancando o tempo do jogo
+- [ ] Mundo tem hora do jogo (comeca em 1500-01-01 06:00) e periodo (Manha/Tarde/Noite/Madrugada)
+- [ ] Cliente HTML conecta via WebSocket e recebe estado do mundo a cada tick
+- [ ] Endpoint `/admin/status` retorna status do servidor em JSON
 
 ## Fase 1 — Mundo Vivo
 
-- [ ] Structs NPC com rotinas diárias (acordar, trabalhar, comer, dormir)
-- [ ] Utility AI básica (Score = Peso × (1 – Necessidade Normalizada))
-- [ ] Ciclo dia/noite vinculado ao relógio do jogo (Manhã/Tarde/Noite/Madrugada)
-- [ ] Sistema de Fofoca entre NPCs
-- [ ] StoryManager — sementes narrativas reagem a threshold de eventos
-- [ ] Admin v1: listar/localizar NPCs, inspecionar estado por entidade
+**Objetivo:** NPCs vivem no mundo com rotinas, necessidades e comportamento autonomo.
+
+- [ ] NPCs tem agenda por periodo (onde estar, o que fazer)
+- [ ] NPCs tem necessidades (fome, cansaco) que mudam a cada tick
+- [ ] Utility AI decide atividade baseado nas necessidades (Score = Peso x (1 - Necessidade))
+- [ ] NPCs fofocam entre si (propagacao de informacao)
+- [ ] Admin pode listar e inspecionar NPCs
 
 ## Fase 2 — Observador
 
-- [ ] Cliente HTML/CSS/JS conecta via WebSocket, exibe estado do mundo
-- [ ] Mapa de nós navegável (read-only, NPCs se movendo)
-- [ ] Log de eventos em painel lateral
-- [ ] HUD de tempo (relógio do jogo com períodos, dia/noite)
-- [ ] Admin v2: observabilidade dos comandos no cliente
+**Objetivo:** Cliente web mostra o mundo em tempo real (read-only).
+
+- [ ] Mapa de nos navegavel mostrando NPCs se movendo
+- [ ] Log de eventos lateral
+- [ ] HUD de tempo (relogio do jogo, periodo)
 
 ## Fase 3 — Jogador (MVP "O Despertar")
 
-- [ ] Criação de personagem (1 classe: Guerreiro Tribal, point-buy 27 pts)
-- [ ] Navegação por blocos com custo em tempo real (3 blocos: Vila, Floresta, Ruínas)
-- [ ] Combate estático (D20 simplificado — Iniciativa → Turnos → Loot)
-- [ ] Inventário e equipamentos (equipar, peso, capacidade)
-- [ ] HUD principal (PV, XP, recursos, relógio, posição)
-- [ ] Save/Load do estado do jogador (JSON)
-- [ ] Admin v3: inspeção de personagem, inventário, save/load
-- [ ] Playtest: loop completo 3+ vezes, ajustar números
+**Objetivo:** Loop jogavel: criar personagem, explorar, lutar, completar quest, salvar.
 
-## Fase 4 — Interação
+- [ ] Criar personagem (Guerreiro Tribal, point-buy 27 pts)
+- [ ] Navegar entre 3 zonas (Vila, Floresta, Ruinas)
+- [ ] Combate estatico D20 simplificado
+- [ ] Inventario e equipamentos
+- [ ] Quest "O Cacador que Nao Voltou" jogavel
+- [ ] Save/Load do estado
 
-- [ ] Diálogos ramificados com NPCs (árvore de diálogo JSON)
-- [ ] Sistema de Quests (aceitar, rastrear, completar, recompensa)
-- [ ] Crafting e coleta (proficiências, recursos, receitas)
-- [ ] Comércio com NPCs (server-authoritative)
-- [ ] Facções e reputação
-- [ ] Status e condições em combate (envenenado, atordoado, queimando)
-- [ ] Mini-campanha "O Caçador que Não Voltou" jogável completa
-- [ ] Admin v4: facção, economia, diálogos, estado de quests
+> Detalhes: [mvp-o-despertar-spec.md](product/mvp-o-despertar-spec.md)
 
-## Fase 5 — D20 Completo
+## Fase 4+ — Futuro
 
-- [ ] D20 completo (vantagem, desvantagem, críticos)
-- [ ] Tiers 1→2→3 (Moedas de Classe, evolução, pré-requisitos)
-- [ ] Herança de habilidades (Dom da Revivência)
-- [ ] Habilidades ativas em combate (custo de recurso, AoE, recarga)
-- [ ] 12 classes Tier 1 balanceadas
-- [ ] Grid tático (posicionamento, AoE)
-- [ ] Admin v5: simulação de combate e balanceamento
-
-## Fase 6 — Multiplayer
-
-- [ ] Múltiplas conexões WebSocket simultâneas
-- [ ] Penalidade de morte (perda de 10% XP + 15% durabilidade — sem drop de itens)
-- [ ] Quests competitivas (primeiro a entregar, timeout parcial, server-side)
-- [ ] Inimigos evolutivos (Normal → Veterano → Alfa → Lenda, migram de região)
-- [ ] Temporadas (state machine Tensão → Apogeu → Legado, votação simples)
-- [ ] Eventos globais (mudanças de era)
-- [ ] Economia multiplayer server-authoritative
-- [ ] Bandeirantes como facção NPC ativa
-- [ ] Admin v6: governança operacional + auditoria avançada
-
-## Game Feel (Transversal)
-
-- [ ] Loading/transições de tela (Fase 2+)
-- [ ] Tutorial/onboarding em texto (Fase 3)
-- [ ] Tela inicial + configurações web (Fase 3+)
-- [ ] Sistema de áudio — Web Audio API (Fase 4+)
-- [ ] Acessibilidade — contraste, fonte, teclado (Fase 5+)
-- [ ] i18n — strings separadas do código (Fase 5+)
+Dialogos, crafting, faccoes, D20 completo, multiplayer. Detalhar quando chegar aqui.
 
 ---
 
-## Concluído
+## Referencias
 
-_Mover itens aqui quando prontos._
+- ADRs: [decisions/](../decisions/)
+- GDD: [eras-do-brasil-gdd](https://github.com/sidinei-silva/eras-do-brasil-gdd)
+- Go reference: [estudos/go/](../estudos/go/)
+- Codigo anterior (backup): commit `4d64406`
