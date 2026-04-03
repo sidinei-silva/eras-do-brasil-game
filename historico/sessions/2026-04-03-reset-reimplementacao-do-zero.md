@@ -26,6 +26,27 @@ O desenvolvedor identificou que perdeu a capacidade de abstração e raciocínio
 - Sem pressão de arquitetura — faz funcionar primeiro, organiza depois
 - Sessões de estudo: ler código, comentar com suas palavras, testar
 
+## Decisao: Go (basico) desde o inicio
+
+Cogitou fazer em JS/TS primeiro para isolar o problema de abstracao. Decisao final: ficar com Go usando apenas o subconjunto basico (structs, funcoes, if/for/switch). Sem goroutines, channels, interfaces ou pacotes separados ate precisar. Tudo no main.go.
+
+Motivo: o problema e decomposicao de problemas, nao sintaxe. Trocar de linguagem nao resolve, e refazer em duas linguagens custa o dobro do tempo.
+
+## Ordem de desenvolvimento (metafora da criacao)
+
+1. Mundo (o container)
+2. Tempo passando (dias/tick)
+3. Locais (mapa/zonas)
+4. Recursos (natureza)
+5. Animais/mobs
+6. NPCs
+7. Rotinas e necessidades dos NPCs
+8. Conhecimento dos NPCs
+9. Mundo funcionando sozinho
+10. Player entra no mundo ja vivo
+
+Filosofia: o mundo e o protagonista, nao o jogador. Construir de baixo pra cima ate o mundo rodar sozinho, so entao incluir o player.
+
 ## Arquivos Afetados
 
 - Servidor resetado para Hello World (`server/main.go`)
