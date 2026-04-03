@@ -48,3 +48,54 @@ Use estas perguntas em cada arquivo:
 3. Onde entram goroutines, canais, mutex ou context?
 4. Que dado entra e que dado sai deste arquivo?
 5. Que parte ficou confusa para revisar depois?
+
+## Depois dos comentarios: mao no volante
+
+Este bloco veio de uma orientacao de IA para te ajudar a retomar o projeto com autonomia. A ideia aqui e usar como roteiro pratico, escrevendo o codigo voce mesmo.
+
+### 1) Leitura ativa com papel e caneta (ou comentarios no codigo)
+
+Ordem sugerida para este ciclo:
+
+- [server/npc/npc.go](../server/npc/npc.go)
+- [server/npc/schedule.go](../server/npc/schedule.go)
+- [server/npc/registry.go](../server/npc/registry.go)
+- [server/npc/loader.go](../server/npc/loader.go)
+- [server/world/world.go](../server/world/world.go)
+
+Para cada funcao, escreva com suas palavras o que ela faz.
+
+### 2) Teste de compreensao com mudancas pequenas (feito por voce)
+
+- Renomear loop para gameLoop (mudanca controlada e didatica).
+- Adicionar um novo campo no Snapshot (exemplo: quantidade de NPCs).
+- Adicionar endpoint HTTP /admin/npcs retornando mundo.NPCs.AllStates().
+
+### 3) Proximo passo real do backlog
+
+A Utility AI basica e o item mais educativo agora. Formula base:
+
+Score = Peso x (1 - NecessidadeNormalizada)
+
+Voce vai precisar entender bem os Needs do NPC (Hunger, Fatigue) para implementar. Essa e uma parte importante para destravar o restante da Fase 1.
+
+### 4) Antes de qualquer nova feature
+
+Adicione primeiro o endpoint /admin/npcs. Ele te obriga a conectar mentalmente:
+
+- Registry -> World
+- Rota HTTP -> leitura do estado atual
+
+## Proximo passo concreto sugerido
+
+Implemente voce mesmo, sem IA gerando codigo:
+
+GET /admin/npcs retornando o estado atual de todos os NPCs em JSON.
+
+Checklist tecnico para implementar:
+
+- Entender [server/npc/registry.go](../server/npc/registry.go) e como funciona AllStates().
+- Criar http.HandleFunc em [server/main.go](../server/main.go).
+- Serializar resposta com json.NewEncoder(w).Encode(...), no mesmo padrão dos endpoints existentes.
+
+Observação: sao poucas linhas, mas cada linha toca um conceito importante do projeto.
