@@ -9,9 +9,9 @@
 
 **Objetivo:** Servidor Go rodando com game loop que avança o tempo do mundo. Clientes recebem estado via WebSocket.
 
-- [ ] Servidor HTTP escuta na porta 8080
-- [ ] Game loop roda em intervalo fixo, avançando o tempo do jogo
-- [ ] Mundo tem hora do jogo (comeca em 1500-01-01 06:00) e periodo (Manha/Tarde/Noite/Madrugada)
+- [x] Servidor HTTP escuta na porta 8080
+- [x] Game loop roda em intervalo fixo, avançando o tempo do jogo
+- [x] Mundo tem hora do jogo (comeca em 1500-01-01 06:00) e periodo (Manha/Tarde/Noite/Madrugada)
 - [ ] Cliente HTML conecta via WebSocket e recebe estado do mundo a cada tick
 - [ ] Endpoint `/admin/status` retorna status do servidor em JSON
 
