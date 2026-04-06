@@ -5,153 +5,106 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync/atomic"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
+	handlers "github.com/sidinei-silva/eras-do-brasil-game/server/http"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
+func startGame(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
 
-type PeriodOfDay string
+	gameTime := world.NewGameTime()
 
-const (
-	Morning   PeriodOfDay = "Manhã"
-	Afternoon PeriodOfDay = "Tarde"
-	Night     PeriodOfDay = "Noite"
-	MidNight  PeriodOfDay = "Madrugada"
-)
-
-type GameTime struct {
-	time time.Time
-	PeriodOfDay PeriodOfDay
-}
-
-type GameLoop struct {
-	interval time.Duration
-	running  atomic.Bool
-	tickCount atomic.Int64
-	cancel context.CancelFunc
-	lastTickDuration time.Duration
-	reactionsForTick []func(gl *GameLoop)
-}
-
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, World!")
-}
-
-
-func handlers(mux *http.ServeMux) {
-	mux.HandleFunc("/", helloHandler)
-	adminClientFileServer := http.FileServer(http.Dir("../client/adminClient"))
-	mux.Handle("/admin/", http.StripPrefix("/admin/", adminClientFileServer))
-}
-
-
-func NewGameLoop(interval time.Duration, reactions []func(gl *GameLoop)) *GameLoop {
-	return &GameLoop{
-		interval: interval,
-		reactionsForTick: reactions,
-
-	}
-}
-
-func (gl *GameLoop) Start(ctx context.Context) {
-	if !gl.running.CompareAndSwap(false, true) {
-		slog.Warn("Game loop is already running.")
-		return
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	gl.cancel = cancel
-
-	slog.Info("Starting game loop")
-
-	ticker := time.NewTicker(gl.interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-			case <- ctx.Done():
-				gl.StopGameLoop()
-				return
-			case <- ticker.C:
-				start := time.Now()
-				gl.tickCount.Add(1)
-				gl.lastTickDuration = time.Since(start)
-				for _, reaction := range gl.reactionsForTick {
-					reaction(gl)
-				}
-		}
-	}
-}
-
-func (gl *GameLoop) StopGameLoop() {
-	if !gl.running.CompareAndSwap(true, false) {
-		slog.Warn("Game Loop is not running")
-		return
-	}
-
-	if gl.cancel != nil {
-		gl.cancel()
-	}
-
-	slog.Info("Game loop stopped")
-}
-
-func NewGameTime() GameTime {
-	return GameTime{
-		time: time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC),
-	}
-}
-
-func (gt *GameTime) AdvanceTime(duration time.Duration) {
-	gt.time = gt.time.Add(duration)
-
-	hour := gt.time.Hour()
-
-	switch {
-	case hour >= 6 && hour < 12:
-		gt.PeriodOfDay = Morning
-	case hour >= 12 && hour < 18:
-		gt.PeriodOfDay = Afternoon
-	case hour >= 18 && hour < 24:
-		gt.PeriodOfDay = Night
-	default:
-		gt.PeriodOfDay = MidNight
-	}
-}
-
-
-func StartGame(){
-	gameTime := NewGameTime()
-
-	gameLoopReactions := []func(gl *GameLoop){
-		func(gl *GameLoop) {
-			slog.Info("GameTick", "tickCount", gl.tickCount.Load(), "tickDuration", gl.lastTickDuration)
+	gameLoopReactions := []func(gl *engine.GameLoop){
+		func(gl *engine.GameLoop) {
+			slog.Info("GameTick", "tickCount", gl.TickCount.Load(), "tickDuration", gl.LastTickDuration)
 		},
 
 		// Advance game time every tick
-		func(gl *GameLoop) {
+		func(gl *engine.GameLoop) {
 			gameTime.AdvanceTime(1 * time.Minute)
-			slog.Info("Game time advanced", "tickCount", gl.tickCount.Load(), "currentTime", gameTime.time.Format("15:04"), "periodOfDay", gameTime.PeriodOfDay)
+			slog.Info("Game time advanced", "tickCount", gl.TickCount.Load(), "currentTime", gameTime.Time.Format("15:04"), "periodOfDay", gameTime.PeriodOfDay)
 		},
 	}
 
-	gameLoop := NewGameLoop(1 * time.Second, gameLoopReactions)
-	ctx := context.Background()
-	go gameLoop.Start(ctx)
+	gameLoop := engine.NewGameLoop(1*time.Second, gameLoopReactions)
+
+	go func() {
+		defer wg.Done()
+		gameLoop.StartGameLoop(ctx)
+	}()
+
 }
 
+func startServer(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
 
-func StartServer() {
 	mux := http.NewServeMux()
-	handlers(mux)
-	fmt.Println("Server is running on http://localhost:8080")
-	err := http.ListenAndServe(":8080", mux)
-	if err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
+	handlers.Handlers(mux)
+
+	server := &http.Server{
+		Addr:        ":8080",
+		ReadTimeout: 5 * time.Second,
+		Handler:     mux,
 	}
+
+	// 1. Goroutine para rodar o servidor (escutar requisições)
+	go func() {
+		slog.Info("server iniciado", "addr", server.Addr)
+		slog.Info("admin dashboard disponível em http://localhost:8080/admin/")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("erro no servidor", "err", err)
+		}
+	}()
+
+	// 2. Goroutine para escutar o cancelamento e fazer o Shutdown
+	go func() {
+		defer wg.Done() // Avisa a main que o desligamento do servidor terminou
+
+		// Trava AQUI até o Ctrl+C acontecer
+		<-ctx.Done()
+
+		slog.Info("Iniciando shutdown do servidor...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("erro durante o shutdown ou timeout atingido", "err", err)
+		} else {
+			slog.Info("Servidor encerrado com sucesso.")
+		}
+	}()
+
 }
 
 func main() {
-	StartGame()
-	StartServer()
+	// Cria um contexto que escuta os sinais SIGINT (Ctrl+C) e SIGTERM
+	// 1. Escuta o sinal de parada do Sistema Operacional
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Cria o orquestrador de encerramento
+	var wg sync.WaitGroup
+
+	startGame(ctx, &wg)
+	startServer(ctx, &wg)
+
+	fmt.Println("Sistema rodando. Pressione Ctrl+C para interromper.")
+
+	// A main goroutine bloqueia aqui até que o sistema receba o sinal
+	// 2. Trava a execução aqui até o usuário apertar Ctrl+C
+	<-ctx.Done()
+	fmt.Println("\nSinal de interrupção recebido. Iniciando encerramento gracioso (Graceful Shutdown)...")
+
+	// Main bloqueia novamente aqui. Só avança quando todos os `wg.Done()` forem chamados.
+	wg.Wait()
+	
+	fmt.Println("Todos os processos foram encerrados. Saindo do programa.")
+
 }
