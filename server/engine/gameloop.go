@@ -7,21 +7,19 @@ import (
 	"time"
 )
 
-
 type GameLoop struct {
-	interval time.Duration
-	running  atomic.Bool
-	TickCount atomic.Int64
-	cancel context.CancelFunc
+	interval         time.Duration
+	running          atomic.Bool
+	TickCount        atomic.Int64
+	cancel           context.CancelFunc
 	LastTickDuration time.Duration
 	reactionsForTick []func(gl *GameLoop)
 }
 
 func NewGameLoop(interval time.Duration, reactions []func(gl *GameLoop)) *GameLoop {
 	return &GameLoop{
-		interval: interval,
+		interval:         interval,
 		reactionsForTick: reactions,
-
 	}
 }
 
@@ -41,21 +39,20 @@ func (gl *GameLoop) StartGameLoop(ctx context.Context) {
 
 	for {
 		select {
-			case <- ctx.Done():
-				slog.Info("Context canceled, stopping game loop")
-				gl.StopGameLoop()
-				return
-			case <- ticker.C:
-				start := time.Now()
-				gl.TickCount.Add(1)
-				for _, reaction := range gl.reactionsForTick {
-					reaction(gl)
-				}
-				gl.LastTickDuration = time.Since(start)
+		case <-ctx.Done():
+			slog.Info("Context canceled, stopping game loop")
+			gl.StopGameLoop()
+			return
+		case <-ticker.C:
+			start := time.Now()
+			gl.TickCount.Add(1)
+			for _, reaction := range gl.reactionsForTick {
+				reaction(gl)
+			}
+			gl.LastTickDuration = time.Since(start)
 		}
 	}
 }
-
 
 func (gl *GameLoop) StopGameLoop() {
 	if !gl.running.CompareAndSwap(true, false) {
