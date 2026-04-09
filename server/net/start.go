@@ -10,18 +10,21 @@ import (
 )
 
 func Start(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
 	mux := http.NewServeMux()
 
 	httpServer := api.NewHTTPServer(mux)
 	adminSocket := socket.NewAdminSocket()
 	clientSocket := socket.NewClientSocket()
+	playerHub := socket.NewHub()
+	go playerHub.Run(ctx)
 
 	go httpServer.StartHTTPServer(ctx, wg)
-	go adminSocket.Start(mux, ctx)
-	go clientSocket.Start(mux, ctx)
+	go adminSocket.Start(mux, ctx, wg)
+	go clientSocket.Start(mux, ctx, wg)
+
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		playerHub.ServeWS(w, r)
+	})
 
 	<-ctx.Done()
 	httpServer.StopHTTPServer(ctx)

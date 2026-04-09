@@ -26,6 +26,9 @@ func NewHTTPServer(mux *http.ServeMux) *HTTPServer {
 }
 
 func (httpServer *HTTPServer) StartHTTPServer(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	slog.Info("server iniciado", "addr", httpServer.server.Addr)
 	slog.Info("admin dashboard disponível em http://localhost:8080/admin/")
 	if err := httpServer.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -35,7 +38,7 @@ func (httpServer *HTTPServer) StartHTTPServer(ctx context.Context, wg *sync.Wait
 
 func (httpServer *HTTPServer) StopHTTPServer(ctx context.Context) {
 	slog.Info("Iniciando shutdown do servidor...")
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := httpServer.server.Shutdown(shutdownCtx); err != nil {
