@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sync"
 	"sync/atomic"
 
 	"github.com/coder/websocket"
@@ -33,7 +34,9 @@ func NewHub() *Hub {
 	}
 }
 
-func (h *Hub) Run(ctx context.Context) {
+func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
@@ -86,7 +89,7 @@ func (h *Hub) Run(ctx context.Context) {
 	}
 }
 
-func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
+func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request, wg *sync.WaitGroup) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true,
 	})
@@ -94,6 +97,9 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 		slog.Error("websocket upgrade failed", "error", err)
 		return
 	}
+
+	wg.Add(2)
+	defer wg.Done()
 
 	client := NewClient(h, conn)
 	select {

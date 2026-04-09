@@ -16,14 +16,14 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 	adminSocket := socket.NewAdminSocket()
 	clientSocket := socket.NewClientSocket()
 	playerHub := socket.NewHub()
-	go playerHub.Run(ctx)
+	go playerHub.Run(ctx, wg)
 
 	go httpServer.StartHTTPServer(ctx, wg)
 	go adminSocket.Start(mux, ctx, wg)
 	go clientSocket.Start(mux, ctx, wg)
 
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		playerHub.ServeWS(w, r)
+		playerHub.ServeWS(w, r, wg)
 	})
 
 	<-ctx.Done()

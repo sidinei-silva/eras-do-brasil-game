@@ -78,10 +78,7 @@ func (c *Client) readPump(ctx context.Context) {
 // writePump envia mensagens do Hub para a conexão WebSocket.
 func (c *Client) writePump(ctx context.Context) {
 	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		defer c.conn.Close(websocket.StatusNormalClosure, "writePump encerrado")
-	}()
+	defer ticker.Stop()
 
 	for {
 		select {
