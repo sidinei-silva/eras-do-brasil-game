@@ -1,1 +1,3 @@
 server/tmp
+server/cmd/game/tmp
+server/cmd/agent/tmp

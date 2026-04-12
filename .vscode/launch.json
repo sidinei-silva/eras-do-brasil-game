@@ -1,26 +1,23 @@
 {
+    "configurations": [
+        {
+            "mode": "auto",
+            "name": "Launch Package",
+            "program": "${fileDirname}",
+            "request": "launch",
+            "type": "go"
+        },
+        {
+            "cwd": "${workspaceFolder}/server",
+            "mode": "auto",
+            "name": "Rodar Servidor MMORPG",
+            "program": "${workspaceFolder}/server/cmd/game",
+            "request": "launch",
+            "type": "go"
+        }
+    ],
     // Use o IntelliSense para saber mais sobre os atributos possíveis.
     // Focalizar para exibir as descrições dos atributos existentes.
     // Para obter mais informações, acesse: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Launch Package",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${fileDirname}"
-        },
-        {
-            "name": "Launch",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}/server",
-            "env": {},
-            "args": [],
-            "showLog": true,
-            "console": "integratedTerminal"
-        }
-    ]
+    "version": "0.2.0"
 }

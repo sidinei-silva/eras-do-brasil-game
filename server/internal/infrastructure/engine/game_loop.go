@@ -3,31 +3,47 @@ package engine
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/domain/state"
 )
 
 type GameLoop struct {
 	interval         time.Duration
 	running          atomic.Bool
-	TickCount        atomic.Int64
 	cancel           context.CancelFunc
 	LastTickDuration time.Duration
-	reactionsForTick []func(gl *GameLoop)
+	reactionsForTick func()
 }
 
-func NewGameLoop(interval time.Duration, reactions []func(gl *GameLoop)) *GameLoop {
+func NewGameLoop(interval time.Duration, reactions func()) *GameLoop {
 	return &GameLoop{
 		interval:         interval,
 		reactionsForTick: reactions,
 	}
 }
 
-func (gl *GameLoop) StartGameLoop(ctx context.Context) {
+func (gl *GameLoop) StopGameLoop() {
+	if gl.cancel != nil {
+		gl.cancel()
+	}
+	gl.running.Store(false)
+}
+
+func (gl *GameLoop) IsRunning() bool {
+	return gl.running.Load()
+}
+
+func (gl *GameLoop) StartGameLoop(gameState *state.GameState, ctx context.Context, wg *sync.WaitGroup) {
 	if !gl.running.CompareAndSwap(false, true) {
 		slog.Warn("Game loop is already running.")
 		return
 	}
+
+	wg.Add(1)
+	defer wg.Done()
 
 	ctx, cancel := context.WithCancel(ctx)
 	gl.cancel = cancel
@@ -45,20 +61,9 @@ func (gl *GameLoop) StartGameLoop(ctx context.Context) {
 			return
 		case <-ticker.C:
 			start := time.Now()
-			gl.TickCount.Add(1)
-			for _, reaction := range gl.reactionsForTick {
-				reaction(gl)
-			}
+			gameState.TickCount++
+			gl.reactionsForTick()
 			gl.LastTickDuration = time.Since(start)
 		}
 	}
-}
-
-func (gl *GameLoop) StopGameLoop() {
-	if !gl.running.CompareAndSwap(true, false) {
-		slog.Warn("Game Loop is not running")
-		return
-	}
-
-	slog.Info("Game loop stopped")
 }

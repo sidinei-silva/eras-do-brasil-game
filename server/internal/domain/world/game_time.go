@@ -12,10 +12,9 @@ const (
 )
 
 type GameTime struct {
-	Time time.Time
+	Time        time.Time
 	PeriodOfDay PeriodOfDay
 }
-
 
 func NewGameTime() GameTime {
 	return GameTime{
