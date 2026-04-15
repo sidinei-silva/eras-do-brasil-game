@@ -16,7 +16,8 @@ import (
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/engine"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net/api"
-	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net/socket"
+	adminSocket "github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net/socket/admin"
+	playerSocket "github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net/socket/player"
 )
 
 func main() {
@@ -30,39 +31,55 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Cria os objetos
+	// 1. Instanciação (Injeção de Dependência)
 	gameState := state.NewGameState()
+	cmdQueue := engine.NewCommandQueue()
+
+	// Hubs
+	playerHub := playerSocket.NewHub(cmdQueue)
+	adminHub := adminSocket.NewHub()
+
+	// Roteadores
+	playerRouter := net.NewCommandRouter(cmdQueue)
+	adminRouter := net.NewAdminRouter(cmdQueue, adminHub)
+
+	//Injeta o Router no Hub
+	adminHub.SetRouter(adminRouter)
+	playerHub.SetRouter(playerRouter)
+
 	worldManager := world.NewManager()
 	cmdManager := command.NewManager()
-	cmdQueue := engine.NewCommandQueue()
-	router := net.NewCommandRouter(cmdQueue)
-	playerHub := socket.NewHub(cmdQueue, router)
-	// adminHub := admin.NewHub()
 
+	// 2. Definição das Reações do Tick
 	reactions := func() {
+		// Passo 1: Processa comandos (Player + Admin)
 		pendingCommands := cmdQueue.Drain()
 
 		if len(pendingCommands) > 0 {
 			cmdManager.ProcessCommands(gameState, pendingCommands)
 		}
-
+		// Passo 2: Evolui o mundo
 		worldManager.ProcessTick(gameState)
-		// func() {
-		// 	snapshot := gameState.Snapshot()
-		// 	adminHub.Publish(snapshot)
-		// }()
+
+		// Passo 3: Modo Deus - Tira a foto e manda para o Admin Hub
+		snapshot := gameState.Snapshot()
+		adminHub.Publish(snapshot)
 	}
 
 	gameLoop := engine.NewGameLoop(1*time.Second, reactions)
 
 	// Starta goroutines
+	// 3. Inicialização das Redes e Processos
 	mux := http.NewServeMux()
 	httpServer := api.NewHTTPServer(mux)
-	playerHub.ServeWS(mux, ctx, &wg)
-	// adminHub.ServeWS(mux)
 
+	playerHub.ServeWS(mux, ctx, &wg)
+	adminHub.ServeWS(mux, ctx, &wg)
+
+	// Roda tudo em paralelo
 	go gameLoop.StartGameLoop(gameState, ctx, &wg)
 	go playerHub.Run(ctx, &wg)
-	// go adminHub.Run(ctx, &wg)
+	go adminHub.Run(ctx, &wg)
 	go httpServer.StartHTTPServer(ctx, &wg)
 
 	fmt.Println("Sistema rodando. Pressione Ctrl+C para interromper.")

@@ -1,182 +1,194 @@
-// package admin
+package admin
 
-// import (
-// 	"context"
-// 	"encoding/json"
-// 	"log/slog"
-// 	"net/http"
-// 	"sync"
-// 	"time"
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+	"sync"
+	"time"
 
-// 	"github.com/coder/websocket"
-// 	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
-// 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
-// )
+	"github.com/coder/websocket"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/domain/state"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/net"
+)
 
-// type Event struct {
-// 	Category  string `json:"category"`
-// 	Type      string `json:"type"`
-// 	Data      any    `json:"data,omitempty"`
-// 	Timestamp string `json:"ts"`
-// }
+type Event struct {
+	Category  string `json:"category"`
+	Type      string `json:"type"`
+	Data      any    `json:"data,omitempty"`
+	Timestamp string `json:"ts"`
+}
 
-// func newEvent(category, eventType string, data any) Event {
-// 	return Event{
-// 		Category:  category,
-// 		Type:      eventType,
-// 		Data:      data,
-// 		Timestamp: time.Now().UTC().Format(time.RFC3339),
-// 	}
-// }
+func newEvent(category, eventType string, data any) Event {
+	return Event{
+		Category:  category,
+		Type:      eventType,
+		Data:      data,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	}
+}
 
-// type Hub struct {
-// 	mu      sync.Mutex
-// 	clients map[*websocket.Conn]context.CancelFunc
+type Hub struct {
+	clients      map[*AdminSession]bool
+	register     chan *AdminSession
+	unregister   chan *AdminSession
+	events       chan []byte              // Fila A: Para mensagens de texto/erros já em JSON
+	SnapshotChan chan *state.GameSnapshot // Fila B: Exclusiva para o motor do jogo
+	router       *net.AdminRouter
+}
 
-// 	events chan []byte
+func NewHub() *Hub {
+	return &Hub{
+		clients:      make(map[*AdminSession]bool),
+		register:     make(chan *AdminSession),
+		unregister:   make(chan *AdminSession),
+		events:       make(chan []byte, 512),
+		SnapshotChan: make(chan *state.GameSnapshot, 10), // Buffer de 10 ticks (protege o GameLoop)
+	}
+}
 
-// 	gameLoop          *engine.GameLoop
-// 	world             *world.World
-// 	playerOnlineCount func() int
-// }
+// Injeta o router após a criação
+func (h *Hub) SetRouter(r *net.AdminRouter) {
+	h.router = r
+}
 
-// func NewHub(gameLoop *engine.GameLoop, w *world.World, playerOnline func() int) *Hub {
-// 	return &Hub{
-// 		clients:           make(map[*websocket.Conn]context.CancelFunc),
-// 		events:            make(chan []byte, 512),
-// 		gameLoop:          gameLoop,
-// 		world:             w,
-// 		playerOnlineCount: playerOnline,
-// 	}
-// }
+// ==========================================
+// MÉTODOS DE ENTRADA DE DADOS
+// ==========================================
 
-// func (h *Hub) Run(ctx context.Context) {
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			h.mu.Lock()
-// 			for conn, cancel := range h.clients {
-// 				cancel()
-// 				conn.CloseNow()
-// 			}
-// 			h.clients = make(map[*websocket.Conn]context.CancelFunc)
-// 			h.mu.Unlock()
-// 			return
+// Usado para erros, respostas a comandos, chat.
+// Faz o Marshal na hora porque não é chamado pelo GameLoop.
+func (h *Hub) Send(category, eventType string, data any) {
+	event := newEvent(category, eventType, data)
 
-// 		case msg := <-h.events:
-// 			h.mu.Lock()
-// 			for conn, cancel := range h.clients {
-// 				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
-// 				err := conn.Write(ctx2, websocket.MessageText, msg)
-// 				cancel2()
-// 				if err != nil {
-// 					slog.Warn("admin client write failed, removing", "error", err)
-// 					cancel()
-// 					conn.CloseNow()
-// 					delete(h.clients, conn)
-// 				}
-// 			}
-// 			h.mu.Unlock()
-// 		}
-// 	}
-// }
+	payload, err := json.Marshal(event)
 
-// func (h *Hub) Publish(snap world.Snapshot) {
-// 	h.send("gameloop", "tick", map[string]any{
-// 		"tick":      snap.Tick,
-// 		"game_time": snap.GameTime,
-// 		"period":    snap.Period,
-// 	})
-// }
+	if err != nil {
+		slog.Error("admin: failed to marshal event", "error", err)
+		return
+	}
 
-// func (h *Hub) NotifyLobby(eventType string, data any) {
-// 	h.send("lobby", eventType, data)
-// }
+	select {
+	case h.events <- payload:
+	default:
+		slog.Warn("admin event channel full, dropping", "type", eventType)
+	}
+}
 
-// func (h *Hub) send(category, eventType string, data any) {
-// 	ev := newEvent(category, eventType, data)
-// 	b, err := json.Marshal(ev)
-// 	if err != nil {
-// 		slog.Error("admin: failed to marshal event", "error", err)
-// 		return
-// 	}
-// 	select {
-// 	case h.events <- b:
-// 	default:
-// 		slog.Warn("admin event channel full, dropping", "type", eventType)
-// 	}
-// }
+// Usado EXCLUSIVAMENTE pelo GameLoop a cada 1 segundo.
+// NÃO FAZ MARSHAL AQUI. Apenas entrega o ponteiro no canal e libera o motor.
+// O select garante que se a fila do Admin estiver
+// cheia (por latência de rede), o pacote é descartado e o motor do jogo não trava.
+func (h *Hub) Publish(snap *state.GameSnapshot) {
+	select {
+	case h.SnapshotChan <- snap:
+	default:
+		// Se o admin hub travar, a foto é descartada, mas o jogo não laga.
+	}
+}
 
-// func (h *Hub) sendToConn(conn *websocket.Conn, category, eventType string, data any) {
-// 	ev := newEvent(category, eventType, data)
-// 	b, err := json.Marshal(ev)
-// 	if err != nil {
-// 		return
-// 	}
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-// 	defer cancel()
-// 	_ = conn.Write(ctx, websocket.MessageText, b)
-// }
+// ==========================================
+// MÉTODOS DE PROCESSAMENTO E SAÍDA
+// ==========================================
+func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 
-// func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
-// 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-// 		InsecureSkipVerify: true,
-// 	})
-// 	if err != nil {
-// 		slog.Error("admin websocket upgrade failed", "error", err)
-// 		return
-// 	}
+	for {
+		select {
 
-// 	connCtx, connCancel := context.WithCancel(r.Context())
+		case <-ctx.Done():
+			for client := range h.clients {
+				close(client.send)
+				client.conn.Close(websocket.StatusNormalClosure, "servidor encerrando conexões")
+				delete(h.clients, client)
+			}
 
-// 	h.mu.Lock()
-// 	h.clients[conn] = connCancel
-// 	h.mu.Unlock()
+			return
 
-// 	slog.Info("admin connected", "total", h.clientCount())
+		case client := <-h.register:
+			h.clients[client] = true
+			slog.Info("Admin registrado no Hub")
 
-// 	h.sendToConn(conn, "system", "welcome", map[string]any{
-// 		"message":   "Admin console connected",
-// 		"game_loop": h.gameLoop.Status(),
-// 		"world":     h.world.Snapshot(),
-// 	})
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.send)
+				slog.Info("Admin desregistrado")
+			}
 
-// 	h.readPump(connCtx, conn)
+		// FILA A: Distribui bytes que já vieram prontos do h.send()
+		case payload := <-h.events:
+			h.broadcastPayload(payload)
 
-// 	h.mu.Lock()
-// 	delete(h.clients, conn)
-// 	h.mu.Unlock()
-// 	connCancel()
-// 	conn.CloseNow()
+			// FILA B: O Hub recebe a foto do GameLoop, faz o Marshal pesado (longe do motor), e envia.
+		case snap := <-h.SnapshotChan:
+			event := newEvent("system", "snapshot", snap)
+			payload, err := json.Marshal(event)
 
-// 	slog.Info("admin disconnected", "total", h.clientCount())
-// }
+			if err == nil {
+				h.broadcastPayload(payload)
+			}
 
-// func (h *Hub) readPump(ctx context.Context, conn *websocket.Conn) {
-// 	conn.SetReadLimit(4096)
-// 	for {
-// 		readCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-// 		_, message, err := conn.Read(readCtx)
-// 		cancel()
-// 		if err != nil {
-// 			return
-// 		}
+		}
+	}
+}
 
-// 		var cmd InboundCommand
-// 		if err := json.Unmarshal(message, &cmd); err != nil {
-// 			h.sendToConn(conn, "command", "error", map[string]string{
-// 				"error": "invalid JSON",
-// 			})
-// 			continue
-// 		}
+func (h *Hub) broadcastPayload(payload []byte) {
+	for client := range h.clients {
+		select {
+		case client.send <- payload:
+		default:
+			// Se o buffer do cliente lotou (lag extremo), ele é desconectado para salvar o Hub
+			close(client.send)
+			delete(h.clients, client)
+		}
+	}
+}
 
-// 		h.handleCommand(conn, cmd)
-// 	}
-// }
+func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGroup) {
+	mux.HandleFunc("/ws/admin", func(w http.ResponseWriter, r *http.Request) {
 
-//	func (h *Hub) clientCount() int {
-//		h.mu.Lock()
-//		defer h.mu.Unlock()
-//		return len(h.clients)
-//	}
-package socket
+		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+			InsecureSkipVerify: true,
+		})
+
+		if err != nil {
+			slog.Error("admin websocket upgrade failed", "error", err)
+			return
+		}
+
+		wg.Add(2)
+		defer wg.Done()
+
+		client := NewAdminSession(h, conn, h.router, ctx)
+
+		select {
+		case h.register <- client:
+			slog.Info("admin connected", "id", client.id)
+		default:
+			slog.Warn("hub register queue full")
+			_ = conn.Close(websocket.StatusTryAgainLater, "server busy")
+			return
+		}
+
+		// ==========================================
+		// 3. A MENSAGEM DE WELCOME DIRETA
+		// ==========================================
+		welcomeEvent := newEvent("system", "welcome", map[string]any{
+			"message": "Admin console connected. Aguardando a sincronização do próximo tick...",
+			// Não pedimos o Snapshot aqui! O GameLoop vai enviar automaticamente no SnapshotChan.
+		})
+
+		if payload, err := json.Marshal(welcomeEvent); err == nil {
+			// Colocamos o JSON direto no canal de envio DESTE cliente, ignorando os outros
+			client.send <- payload
+		}
+
+		go client.writePump(ctx)
+		// Se esta linha for uma goroutine (go client...), o socket morre na mesma hora.
+		client.readPump(ctx, wg)
+
+	})
+}

@@ -1,4 +1,4 @@
-package socket
+package player
 
 import (
 	"context"
@@ -31,7 +31,7 @@ type OutboundEvent struct {
 	Data any    `json:"data,omitempty"`
 }
 
-type Client struct {
+type PlayerSession struct {
 	hub      *Hub
 	conn     *websocket.Conn
 	send     chan []byte
@@ -41,8 +41,8 @@ type Client struct {
 	router   *net.CommandRouter
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, cmdQueue *engine.CommandQueue, router *net.CommandRouter) *Client {
-	return &Client{
+func NewPlayerSession(hub *Hub, conn *websocket.Conn, cmdQueue *engine.CommandQueue, router *net.CommandRouter) *PlayerSession {
+	return &PlayerSession{
 		hub:      hub,
 		conn:     conn,
 		send:     make(chan []byte, 256),
@@ -53,7 +53,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, cmdQueue *engine.CommandQueue, ro
 	}
 }
 
-func (c *Client) readPump(ctx context.Context, wg *sync.WaitGroup) {
+func (c *PlayerSession) readPump(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer func() {
 		select {
@@ -78,26 +78,29 @@ func (c *Client) readPump(ctx context.Context, wg *sync.WaitGroup) {
 			break
 		}
 
-		// 1. Decodifica o JSON base
-		var clientMsg command.ClientMessage
-		if err := json.Unmarshal(messageBytes, &clientMsg); err != nil {
-			slog.Warn("Failed to unmarshal message", "client", c.name, "error", err)
-			continue // Ignora JSON malformado
-		}
+		if c.router != nil {
 
-		// 2. Monta o comando com a ID do jogador
-		cmd := command.PlayerCommand{
-			PlayerID: c.id, // A ID que você gerou para este client
-			Message:  clientMsg,
-		}
+			// 1. Decodifica o JSON base
+			var clientMsg command.ClientMessage
+			if err := json.Unmarshal(messageBytes, &clientMsg); err != nil {
+				slog.Warn("Failed to unmarshal message", "client", c.name, "error", err)
+				continue // Ignora JSON malformado
+			}
 
-		// 3. Delega para o CommandRouter decidir o que fazer
-		c.router.Route(cmd)
+			// 2. Monta o comando com a ID do jogador
+			cmd := command.PlayerCommand{
+				PlayerID: c.id, // A ID que você gerou para este client
+				Message:  clientMsg,
+			}
+
+			// 3. Delega para o CommandRouter decidir o que fazer
+			c.router.Route(cmd)
+		}
 	}
 }
 
 // writePump envia mensagens do Hub para a conexão WebSocket.
-func (c *Client) writePump(ctx context.Context) {
+func (c *PlayerSession) writePump(ctx context.Context) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 
@@ -107,7 +110,7 @@ func (c *Client) writePump(ctx context.Context) {
 		case message, ok := <-c.send:
 			if !ok {
 				// O Hub fechou o canal, então fechamos a conexão
-				c.conn.Write(ctx, websocket.MessageText, []byte("conexão encerrada pelo servidor"))
+				c.conn.Close(websocket.StatusNormalClosure, "conexão encerrada pelo servidor")
 				return
 			}
 
@@ -126,6 +129,7 @@ func (c *Client) writePump(ctx context.Context) {
 			err := c.conn.Ping(pingCtx)
 			cancel()
 			if err != nil {
+				slog.Error("erro de ping", "error", err)
 				return
 			}
 
@@ -140,34 +144,3 @@ func (c *Client) writePump(ctx context.Context) {
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
-
-// func (c *Client) handleInbound(in InboundEvent) {
-// 	switch strings.ToLower(strings.TrimSpace(in.Type)) {
-// 	case "set_name":
-// 		name := strings.TrimSpace(in.Name)
-// 		if name == "" {
-// 			c.sendJSON(OutboundEvent{Type: "error", Data: "name_required"})
-// 			return
-// 		}
-// 		old := c.name
-// 		c.name = name
-// 		c.sendJSON(OutboundEvent{Type: "name_updated", Data: map[string]string{"name": c.name}})
-// 		renameData := map[string]string{"from": old, "to": c.name}
-// 		c.hub.Broadcast(OutboundEvent{Type: "player_renamed", Data: renameData})
-// 		if c.hub.observer != nil {
-// 			c.hub.observer.NotifyLobby("player_renamed", renameData)
-// 		}
-// 	case "chat":
-// 		body := strings.TrimSpace(in.Body)
-// 		if body == "" {
-// 			return
-// 		}
-// 		chatData := map[string]string{"from": c.name, "body": body}
-// 		c.hub.Broadcast(OutboundEvent{Type: "chat", Data: chatData})
-// 		if c.hub.observer != nil {
-// 			c.hub.observer.NotifyLobby("chat", chatData)
-// 		}
-// 	default:
-// 		c.sendJSON(OutboundEvent{Type: "error", Data: "unknown_event_type"})
-// 	}
-// }

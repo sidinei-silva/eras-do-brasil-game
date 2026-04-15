@@ -31,8 +31,8 @@ func NewGameState() *GameState {
 	}
 }
 
-func (gs *GameState) Snapshot() GameSnapshot {
-	return GameSnapshot{
+func (gs *GameState) Snapshot() *GameSnapshot {
+	snapshot := &GameSnapshot{
 		Tick:     gs.TickCount,
 		GameTime: *gs.GameTime,
 		// Period:   gs.GameTime.PeriodOfDay,
@@ -40,4 +40,11 @@ func (gs *GameState) Snapshot() GameSnapshot {
 		// Combats:   make([]CombatState, 0, len(gs.Combats)),
 		// Online:    len(gs.OnlinePlayers),
 	}
+
+	// Quando tiveres mapas de NPCs/Players, precisas de iterar e copiar os valores aqui.
+	// Exemplo:
+	// snap.NPCs = make(map[string]npc.NPC, len(gs.NPCs))
+	// for k, v := range gs.NPCs { snap.NPCs[k] = *v } // <- Copia o valor desreferenciado
+
+	return snapshot
 }

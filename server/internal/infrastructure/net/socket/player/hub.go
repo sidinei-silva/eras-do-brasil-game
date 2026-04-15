@@ -1,4 +1,4 @@
-package socket
+package player
 
 import (
 	"context"
@@ -15,26 +15,30 @@ import (
 
 // Hub mantém o conjunto de clientes ativos e transmite mensagens para eles.
 type Hub struct {
-	register    chan *Client
-	unregister  chan *Client
+	register    chan *PlayerSession
+	unregister  chan *PlayerSession
 	broadcast   chan []byte
-	clients     map[*Client]struct{}
+	clients     map[*PlayerSession]struct{}
 	online      atomic.Int64
 	mu          sync.Mutex
-	clientsByID map[string]*Client
+	clientsByID map[string]*PlayerSession
 	cmdQueue    *engine.CommandQueue
 	router      *net.CommandRouter
 }
 
-func NewHub(queue *engine.CommandQueue, router *net.CommandRouter) *Hub {
+func NewHub(queue *engine.CommandQueue) *Hub {
 	return &Hub{
-		clients:    make(map[*Client]struct{}),
+		clients:    make(map[*PlayerSession]struct{}),
 		broadcast:  make(chan []byte, 256),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		register:   make(chan *PlayerSession),
+		unregister: make(chan *PlayerSession),
 		cmdQueue:   queue,
-		router:     router,
 	}
+}
+
+// Injeta o router após a criação
+func (h *Hub) SetRouter(r *net.CommandRouter) {
+	h.router = r
 }
 
 func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
@@ -102,7 +106,7 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 		defer wg.Done()
 
 		//Vale a pena usar o NewClient aqui ou já crio o objeto direto?
-		client := NewClient(h, conn, h.cmdQueue, h.router)
+		client := NewPlayerSession(h, conn, h.cmdQueue, h.router)
 
 		select {
 		case h.register <- client:
@@ -113,6 +117,7 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 		}
 
 		go client.writePump(ctx)
+		// Se esta linha for uma goroutine (go client...), o socket morre na mesma hora.
 		client.readPump(ctx, wg)
 	})
 }
