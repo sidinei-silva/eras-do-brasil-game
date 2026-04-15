@@ -1,0 +1,143 @@
+:root {
+    --bg-dark: #0d1117;
+    --bg-panel: #161b22;
+    --border: #30363d;
+    --text-main: #c9d1d9;
+    --accent: #58a6ff;
+    --success: #3fb950;
+    --danger: #f85149;
+    --font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    overflow: hidden;
+}
+
+.god-mode-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    font-weight: bold;
+}
+
+.brand span {
+    color: var(--danger);
+    font-size: 0.8em;
+}
+
+.server-stats span {
+    margin-left: 20px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #000;
+}
+
+.status-online {
+    color: var(--success);
+}
+
+.status-offline {
+    color: var(--danger);
+}
+
+.main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+aside {
+    width: 300px;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+aside:last-child {
+    border-right: none;
+    border-left: 1px solid var(--border);
+}
+
+.console-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.logs {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+}
+
+.log-sys {
+    color: var(--accent);
+}
+
+.log-err {
+    color: var(--danger);
+}
+
+.log-cmd {
+    color: #8b949e;
+}
+
+.log-info {
+    color: var(--text-main);
+}
+
+.button-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+button {
+    background-color: #21262d;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    text-align: left;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #30363d;
+    border-color: #8b949e;
+}
+
+.btn-query {
+    border-color: var(--accent);
+}

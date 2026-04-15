@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eras do Brasil - Modo Deus</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="god-mode-container">
+        <header class="top-bar">
+            <div class="brand">Eras do Brasil <span>// MODO DEUS</span></div>
+            <div class="server-stats">
+                <span id="stat-tick">Tick: aguardando...</span>
+                <span id="stat-time">Game Time: --:--</span>
+                <span id="stat-status" class="status-offline">Offline</span>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <aside class="world-panel">
+                <h3>🌍 Visão do Mundo</h3>
+                <div id="world-data" class="data-view">
+                    Iniciando sincronização com o GameLoop...
+                </div>
+            </aside>
+
+            <main class="console-panel">
+                <div id="log-container" class="logs"></div>
+                <div class="command-input">
+                    <input type="text" id="cmd-input" placeholder="Enviar JSON manual ou comando de chat..." />
+                    <button id="btn-send">Enviar</button>
+                </div>
+            </main>
+
+            <aside class="action-panel">
+                <h3>⚡ Comandos OOB</h3>
+                <div class="button-grid">
+                    <button onclick="sendAction('admin_set_time', {time: '08:00'})">🌞 Forçar Manhã</button>
+                    <button onclick="sendAction('admin_set_time', {time: '20:00'})">🌙 Forçar Noite</button>
+                    <button onclick="sendAction('admin_spawn_npc', {npc_id: 'lobo_guara', amount: 1})">🐺 Spawn
+                        Lobo</button>
+                    <button onclick="sendAction('admin_heal_player', {target: 'all'})">💖 Curar Servidor</button>
+                    <button onclick="sendAction('admin_get_npc', {id: '123'})" class="btn-query">🔍 Consultar NPC
+                        123</button>
+                </div>
+            </aside>
+        </div>
+    </div>
+    <script src="js/main.js"></script>
+</body>
+
+</html>
