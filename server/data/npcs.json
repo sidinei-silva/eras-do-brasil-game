@@ -1,0 +1,34 @@
+{
+    "npcs": [
+        {
+            "backstory": "Tomas é um ferreiro habilidoso que aprendeu o ofício com seu pai. Ele é conhecido por criar armas e armaduras de alta qualidade para os aventureiros que visitam a vila. Tomas é um homem trabalhador e dedicado, sempre disposto a ajudar os outros com suas habilidades de forja.",
+            "currentZone": "mata_costeira-vila_de_sao_tome",
+            "description": "Tomas é um ferreiro robusto e de meia-idade, com cabelos grisalhos e uma barba bem cuidada. Ele é conhecido por sua habilidade em forjar armas e armaduras de alta qualidade, e é um membro respeitado da comunidade local. Tomas é amigável e sempre disposto a compartilhar histórias sobre suas aventuras passadas e os desafios que enfrentou como ferreiro.",
+            "id": "npc_ferreiro_tomas",
+            "name": "Tomas, o Ferreiro",
+            "role": "merchant",
+            "schedule": [
+                {
+                    "activity": "working",
+                    "location": "oficina do ferreiro",
+                    "period": "manhã"
+                },
+                {
+                    "activity": "working",
+                    "location": "mercado central",
+                    "period": "tarde"
+                },
+                {
+                    "activity": "eating",
+                    "location": "residência de Tomas",
+                    "period": "noite"
+                },
+                {
+                    "activity": "sleeping",
+                    "location": "residência de Tomas",
+                    "period": "madrugada"
+                }
+            ]
+        }
+    ]
+}

@@ -5,10 +5,10 @@ import "time"
 type PeriodOfDay string
 
 const (
-	Morning   PeriodOfDay = "Manhã"
-	Afternoon PeriodOfDay = "Tarde"
-	Night     PeriodOfDay = "Noite"
-	MidNight  PeriodOfDay = "Madrugada"
+	Morning   PeriodOfDay = "manhã"
+	Afternoon PeriodOfDay = "tarde"
+	Night     PeriodOfDay = "noite"
+	MidNight  PeriodOfDay = "madrugada"
 )
 
 type GameTime struct {

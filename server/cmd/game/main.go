@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/application/command"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/application/npc"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/application/world"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/domain/state"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/internal/infrastructure/engine"
@@ -49,6 +50,12 @@ func main() {
 
 	worldManager := world.NewManager()
 	cmdManager := command.NewManager()
+	npcManager, err := npc.NewManager(gameState)
+
+	if err != nil {
+		fmt.Println("Erro ao inicializar NPC Manager:", err)
+		return
+	}
 
 	// 2. Definição das Reações do Tick
 	reactions := func() {
@@ -61,7 +68,10 @@ func main() {
 		// Passo 2: Evolui o mundo
 		worldManager.ProcessTick(gameState)
 
-		// Passo 3: Modo Deus - Tira a foto e manda para o Admin Hub
+		// Passo 3: Atualiza os NPCs
+		npcManager.ProcessTick(gameState)
+
+		// Passo 4: Modo Deus - Tira a foto e manda para o Admin Hub
 		snapshot := gameState.Snapshot()
 		adminHub.Publish(snapshot)
 	}

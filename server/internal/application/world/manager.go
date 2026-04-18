@@ -13,6 +13,6 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) ProcessTick(gameState *state.GameState) {
-	gameState.GameTime.AdvanceTime(1 * time.Minute)
+	gameState.GameTime.AdvanceTime(1 * time.Hour)
 	// slog.Info("Game time advanced", "tickCount", gameState.TickCount, "currentTime", gameState.GameTime.Time.Format("15:04"), "periodOfDay", gameState.GameTime.PeriodOfDay)
 }

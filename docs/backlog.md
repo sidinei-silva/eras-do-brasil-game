@@ -12,8 +12,8 @@
 - [x] Servidor HTTP escuta na porta 8080
 - [x] Game loop roda em intervalo fixo, avançando o tempo do jogo
 - [x] Mundo tem hora do jogo (comeca em 1500-01-01 06:00) e periodo (Manha/Tarde/Noite/Madrugada)
-- [ ] Cliente HTML conecta via WebSocket e recebe estado do mundo a cada tick
-- [ ] Endpoint `/admin/status` retorna status do servidor em JSON
+- [x] Cliente HTML conecta via WebSocket e recebe estado do mundo a cada tick
+- [x] Endpoint `/admin/status` retorna status do servidor em JSON
 
 ## Fase 1 — Mundo Vivo
 
