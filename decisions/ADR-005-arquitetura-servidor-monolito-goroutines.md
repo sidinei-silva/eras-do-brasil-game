@@ -85,6 +85,7 @@ O EventBus continua existindo, mas **não coordena lógica de tick**. Seu papel 
 - Eventos assíncronos que não precisam de ordem (conquistas, notificações)
 
 Interface:
+
 - `Publish(topic string, event Event)` — broadcast para subscribers
 - `Subscribe(topic string) <-chan Event` — retorna channel de leitura
 - Subscrições acontecem **apenas no startup** (invariante: sem Subscribe/Unsubscribe em runtime)
@@ -131,39 +132,17 @@ Isso garante que ações do jogador são processadas no contexto correto do tick
 
 ### Estrutura de Módulos
 
-```
-server/
-├── main.go              ← startup, wiring, graceful shutdown
-├── engine/
-│   ├── gameloop.go      ← GameLoop (time.Ticker + chamadas sequenciais)
-│   └── eventbus.go      ← pub/sub para notificações assíncronas
-├── world/
-│   ├── mundo.go         ← struct Mundo, ProcessTick()
-│   └── bloco.go         ← struct Bloco (nó do mapa)
-├── npc/
-│   ├── manager.go       ← NPCManager, ProcessTick()
-│   ├── npc.go           ← struct NPC, rotinas
-│   └── ai.go            ← Utility AI (scoring, decisões)
-├── combat/
-│   ├── manager.go       ← CombatManager, ProcessTick()
-│   └── d20.go           ← motor de rolagem
-├── economy/
-│   ├── inventario.go
-│   └── comercio.go
-├── player/
-│   ├── player.go        ← struct Player
-│   └── session.go       ← WebSocket connection handler (readPump/writePump)
-├── narrative/
-│   ├── story.go         ← StoryManager, ProcessTick()
-│   └── quest.go
-├── persist/
-│   └── persist.go       ← snapshot goroutine (ver ADR-006)
-├── data/
-│   └── *.json           ← dados estáticos (NPCs, items, mapa)
-└── go.mod
-```
+> A organização concreta dos pacotes está definida no [ADR-007](ADR-007-estrutura-pacotes-server.md).
+> Resumo: layout flat por domínio na raiz de `server/`. Cada manager é um
+> pacote (`world/`, `npc/`, `combat/`, ...). Estado mutável central em
+> `state/`. I/O em `net/` e `persist/`. Sem `internal/`, sem `cmd/`.
 
-**Mudança vs versão anterior:** `npc/` separado de `world/` (responsabilidades distintas — world gerencia terreno/blocos, npc gerencia entidades/IA).
+A relação entre os pacotes segue duas regras invioláveis:
+
+1. **Managers não importam outros managers** — comunicação via
+   `state.GameState` que o GameLoop passa em cada `ProcessTick()`.
+2. **Pacotes de I/O não conhecem lógica de jogo** — recebem comandos
+   via `command.Queue`, devolvem resultados via channels ou snapshots.
 
 ### Quando Considerar Paralelismo no Game Loop
 
@@ -201,3 +180,4 @@ Somente se **todas** estas condições forem verdadeiras:
 - ADR-006: Estratégia de Persistência — define o PersistManager mencionado aqui
 - GDD Cap 8 §8.12: Arquitetura do Motor de Mundo
 - Padrão "Game Loop": [Game Programming Patterns — Game Loop](https://gameprogrammingpatterns.com/game-loop.html)
+- ADR-007:[Estrutura de Pacotes do Servidor](./ADR-007-estrutura-pacotes-server.md)

@@ -18,9 +18,8 @@ O **GDD (Game Design Document)** e o lore estão no repositório [eras-do-brasil
 ## Estrutura
 
 ```
-├── game/
-│   ├── server/       # Servidor Go (engine, world, combat, economy, etc.)
-│   └── textClient/   # Cliente web HTML/CSS/JS
+├── server/           # Servidor Go (engine, world, combat, economy, etc.)
+├── textClient/       # Cliente web HTML/CSS/JS
 ├── decisions/        # ADRs (Architecture Decision Records)
 ├── docs/             # Guias e specs de produto
 ├── estudos/          # Trilhas de estudo tecnico (Go, arquitetura, pratica)
@@ -36,6 +35,7 @@ O **GDD (Game Design Document)** e o lore estão no repositório [eras-do-brasil
 - [ADR-004 — Pivot MMORPG Servidor Go](decisions/ADR-004-pivot-mmorpg-servidor-go.md)
 - [ADR-005 — Arquitetura Monolito + Goroutines + EventBus](decisions/ADR-005-arquitetura-servidor-monolito-goroutines.md)
 - [ADR-006 — Persistência RAM-First + SQLite](decisions/ADR-006-persistencia-ram-first-sqlite.md)
+- [ADR-007 - Estrutura de Pacotes do Servidor — Flat por Domínio](./decisions/ADR-007-estrutura-pacotes-server.md)
 
 ## Links
 

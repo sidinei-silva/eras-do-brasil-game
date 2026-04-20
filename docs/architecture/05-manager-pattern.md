@@ -70,26 +70,6 @@ Cada `manager.go` segue a mesma estrutura:
    - Retorna eventos ou modifica o GameState que recebeu
 ```
 
-## O que muda no seu código atual
-
-Hoje, o `main.go` faz assim:
-
-```
-gameTime := world.NewGameTime()
-// ...reaction function que chama gameTime.AdvanceTime()
-```
-
-O main conhece `GameTime` diretamente. Isso funciona agora, mas quando você adicionar blocos, clima, e regeneração de recursos ao pacote world, o main vai precisar manipular cada um deles. A complexidade vaza para fora do pacote.
-
-Com o pattern, o main faria:
-
-```
-worldManager := world.NewManager(config)
-// ...game loop chama worldManager.ProcessTick(gameState)
-```
-
-O main só conhece o manager. O manager cria o GameTime, os Blocks, etc. internamente. Quando você adicionar clima amanhã, só muda o `ProcessTick()` do WorldManager — o main não é alterado.
-
 ## Quando separar um arquivo dentro do pacote
 
 Dentro de um pacote Go, todos os arquivos compartilham o namespace. A divisão em arquivos é para organização humana, não para o compilador. Regra prática:
@@ -104,6 +84,7 @@ Dentro de um pacote Go, todos os arquivos compartilham o namespace. A divisão e
 Nem toda responsabilidade precisa de seu próprio pacote. Se os recursos do mapa (ervas, minérios) são simples (regeneram por período), eles podem viver como um método dentro do `WorldManager.ProcessTick()` ou como um struct `Resource` em `world/resource.go`.
 
 Extraia para um pacote separado (`resource/`) só quando:
+
 - A lógica ficar complexa o suficiente para ter seu próprio `ProcessTick()`
 - O pacote world estiver ficando grande demais (>500 linhas)
 - A responsabilidade for claramente independente (ex: resource manager não precisa saber sobre clima)
