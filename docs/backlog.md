@@ -19,8 +19,8 @@
 
 **Objetivo:** NPCs vivem no mundo com rotinas, necessidades e comportamento autonomo.
 
-- [ ] NPCs tem agenda por periodo (onde estar, o que fazer)
-- [ ] NPCs tem necessidades (fome, cansaco) que mudam a cada tick
+- [x] NPCs tem agenda por periodo (onde estar, o que fazer)
+- [x] NPCs tem necessidades (fome, cansaco) que mudam a cada tick
 - [ ] Utility AI decide atividade baseado nas necessidades (Score = Peso x (1 - Necessidade))
 - [ ] NPCs fofocam entre si (propagacao de informacao)
 - [ ] Admin pode listar e inspecionar NPCs
