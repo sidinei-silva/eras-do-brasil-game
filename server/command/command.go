@@ -3,8 +3,6 @@ package command
 import (
 	"encoding/json"
 	"log/slog"
-
-	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
 )
 
 // Constantes para não usar strings soltas pelo código
@@ -45,7 +43,7 @@ type MovePayload struct {
 }
 
 // ProcessPlayerCommands roda no fluxo síncrono do tick
-func ProcessPlayerCommands(engine *engine.GameLoop, cmds []PlayerCommand) {
+func ProcessPlayerCommands(tickCount int64, cmds []PlayerCommand) {
 	for _, cmd := range cmds {
 
 		// Aqui fica o seu switch com as lógicas do JSON cru
@@ -62,13 +60,13 @@ func ProcessPlayerCommands(engine *engine.GameLoop, cmds []PlayerCommand) {
 				return // JSON inválido, ignora
 			}
 
-			slog.Info("Tick %d: Jogador %s enviou chat: %s", "tick", engine.TickCount(), "player_id", cmd.PlayerID, "message", payload.Message)
+			slog.Info("Jogador enviou chat", "tick", tickCount, "player_id", cmd.PlayerID, "message", payload.Message)
 
 		case "move":
-			slog.Info("Tick %d: Jogador %s tentou andar", "tick", engine.TickCount(), "player_id", cmd.PlayerID)
+			slog.Info("Jogador tentou andar", "tick", tickCount, "player_id", cmd.PlayerID)
 
 		default:
-			slog.Warn("Comando desconhecido: %s", "type", cmd.Message.Type)
+			slog.Warn("Comando desconhecido", "type", cmd.Message.Type)
 		}
 	}
 }

@@ -52,6 +52,7 @@ func main() {
 	npcManager, npcErr := npc.NewManager()
 	if npcErr != nil {
 		slog.Error("Erro ao criar NPC Manager:", "npcErr", npcErr)
+		os.Exit(1)
 	}
 
 	gameLoop := engine.NewGameLoop(1 * time.Second)
@@ -62,7 +63,7 @@ func main() {
 		pendingCommands := cmdQueue.Drain()
 
 		if len(pendingCommands) > 0 {
-			command.ProcessPlayerCommands(gameLoop, pendingCommands)
+			command.ProcessPlayerCommands(gameLoop.TickCount(), pendingCommands)
 		}
 		// Passo 2: Evolui o mundo
 		worldManager.ProcessTick()
