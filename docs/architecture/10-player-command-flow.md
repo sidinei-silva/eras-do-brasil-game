@@ -9,47 +9,52 @@ sequenceDiagram
     participant UI as Browser (UI)
     participant WS as WebSocket
     participant RP as readPump
-    participant V as Validação
-    participant CH as chan Command
+    participant R as PlayerRouter
+    participant CH as CommandQueue
     participant GL as GameLoop
+    participant CP as command.ProcessPlayerCommands
     participant M as Manager de destino
-    participant GS as GameState (RAM)
-    participant EB as EventBus
-    participant WP as writePump
+    participant SN as snapshot.Build
+    participant AH as AdminHub / WritePump
+    participant C as Browser (cliente)
 
     UI->>WS: Jogador clica "Mover para Floresta"
     WS->>RP: {"type":"move","payload":{"to":"floresta_norte"}}
 
-    RP->>V: Parse JSON + validação
-    Note over V: Tipo válido? Jogador existe?<br/>Payload correto?
+    RP->>R: Parse JSON + validação básica
+    Note over R: Tipo válido?<br/>Payload tem formato correto?
 
-    alt JSON inválido ou tipo desconhecido
-        V->>WP: {"type":"error","message":"comando inválido"}
-        WP->>UI: Exibe erro
-    else Válido
-        V->>CH: Command{Type:"move", PlayerID:"abc", To:"floresta_norte"}
+    alt Comando OOB (ex: chat)
+        R->>R: Processa fora do tick
+        R->>AH: envia resposta direta
+    else Comando de simulação (move, attack, ...)
+        R->>CH: Enqueue(PlayerCommand)
     end
 
     Note over GL: Início do próximo tick
 
-    GL->>CH: Lê todos os commands pendentes
-    GL->>GL: Switch no type → despacha pro manager
+    GL->>CH: Drain() - pega todos os commands
+    GL->>CP: ProcessPlayerCommands(tickCount, cmds)
+    CP->>CP: Switch no Message.Type → despacha
 
-    GL->>M: worldManager.MovePlayer("abc", "floresta_norte")
-    M->>GS: Verifica: bloco existe? Está conectado? Jogador pode mover?
+    CP->>M: worldMgr.MovePlayer("abc", "floresta_norte")
+    M->>M: Valida invariantes (bloco existe?<br/>conectado? player pode mover?)
 
     alt Movimento inválido
-        M->>EB: Publish("player.error", {msg: "blocos não conectados"})
+        M-->>CP: retorna erro
+        CP->>AH: envia erro ao player (futuro via EventBus)
     else Movimento válido
-        M->>GS: player.BlockID = "floresta_norte"
-        M->>GS: Marca player como dirty
-        M->>EB: Publish("player.moved", {playerID, from, to})
-        M->>EB: Publish("block.entered", {blockID, playerID})
+        M->>M: muta estado interno (player.BlockID)
     end
 
-    EB->>WP: Eventos relevantes para este jogador
-    WP->>UI: {"type":"moved","block":"floresta_norte","description":"Mata densa..."}
-    UI->>UI: Atualiza mapa, mostra descrição do bloco
+    Note over GL: Fim do ProcessTick de cada manager
+
+    GL->>SN: snapshot.Build(tickCount, worldMgr, npcMgr, ...)
+    SN-->>GL: *Snapshot (cópia imutável)
+    GL->>AH: adminHub.Publish(snap)
+
+    AH->>C: {"type":"snapshot", ...} / eventos relevantes
+    C->>C: Atualiza UI
 ```
 
 ## Diagrama — Switch de despacho no game loop
@@ -82,7 +87,14 @@ Cada etapa da cadeia tem uma responsabilidade única e clara:
 
 **Game loop** — no início de cada tick, drena a fila completamente (processa todos os commands que chegaram desde o último tick). Faz switch no `Type` e despacha pro manager correto. O game loop não conhece a lógica de negócio — ele só roteia.
 
-**Manager** — recebe o comando, valida contra o estado do jogo (o jogador pode mover? está em combate? o bloco existe? está conectado?), aplica a mudança no GameState, e publica eventos relevantes.
+**Manager** — recebe o comando do `ProcessPlayerCommands`, valida contra
+seu estado interno (o jogador pode mover? está em combate? o bloco existe?
+está conectado?), muta seu próprio estado encapsulado (ex:
+`m.players[id].BlockID = novoBloco`), e retorna sucesso/erro. Cada
+manager é dono do seu domínio — não existe `GameState` global sendo
+mutado. Eventos relevantes (para notificar outros jogadores, logar,
+etc.) podem ser publicados via EventBus — mas isso é notificação
+assíncrona, não coordenação de tick (ver ADR-005).
 
 **EventBus** — distribui eventos para subscribers. O writePump do jogador afetado recebe o evento e serializa a resposta JSON.
 

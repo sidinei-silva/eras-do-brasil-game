@@ -57,17 +57,23 @@ O manager é o **ponto de entrada único** do pacote. O game loop chama `manager
 Cada `manager.go` segue a mesma estrutura:
 
 ```
-1. Struct do Manager — contém os dados que ele gerencia
-   - GameTime, lista de Blocks, mapa de NPCs por bloco, etc.
+1. Struct do Manager — é dono dos dados que ele gerencia
+   - world.Manager contém o GameTime; npc.Manager contém o map de NPCs;
+     mob.Manager vai conter o map de mobs, etc.
+   - Estado é campo privado (minúsculo); acesso externo só via getters
+     read-only (All, Get, GameTime) para snapshot e admin OOB
 
 2. New() — função construtora que cria e retorna o manager
    - Recebe dependências como parâmetro (dados de configuração, channels)
    - Carrega dados iniciais (JSON templates no startup)
 
-3. ProcessTick() — chamado pelo game loop a cada tick
+3. ProcessTick(...) — chamado pelo game loop a cada tick
    - Contém a lógica sequencial do que esse domínio faz por tick
    - Pode chamar métodos dos structs internos (gameTime.AdvanceTime)
-   - Retorna eventos ou modifica o GameState que recebeu
+   - Modifica o estado que o manager encapsula (não recebe GameState —
+     esse padrão foi descartado no ADR-007)
+   - Pode receber tipos universais de outros managers como parâmetro
+     (ex: npcManager.ProcessTick(gameTime) recebe world.GameTime)
 ```
 
 ## Quando separar um arquivo dentro do pacote
@@ -101,3 +107,31 @@ Comece com menos pacotes e separe quando doer. O custo de mover código entre pa
 | `combat/` | CombatManager | Combat, Participant, TurnOrder |
 | `story/` | StoryManager | Quest, Season, SeasonState |
 | `economy/` | EconomyManager | Inventory, Recipe, TradeOffer |
+
+## Getters para o Snapshot
+
+Além de `New()` e `ProcessTick(...)`, cada manager expõe getters
+read-only para o pacote `snapshot/` consumir:
+
+```go
+// world/manager.go
+func (m *Manager) GameTime() GameTime { return *m.gameTime }
+
+// npc/manager.go
+func (m *Manager) All() map[string]*Npc     { return m.npcs }
+func (m *Manager) Get(id string) (*Npc, bool) { ... }
+```
+
+Regras:
+
+- **Getters retornam cópias ou ponteiros read-only** — o caller não
+  deve mutar o resultado. Mutação passa pelo manager.
+- **`snapshot.Build()` usa os getters** para montar a cópia imutável
+  que vai pro admin hub e (futuramente) pro persist.
+- **Comandos admin OOB** (ex: "detalhar NPC X") também usam os getters
+  para leitura instantânea fora do tick.
+
+Se um caller precisa mutar o estado de um manager fora do `ProcessTick`,
+isso é feito via método explícito (`npcMgr.Kill(id)`, `worldMgr.SetTime(t)`).
+Mutação direta por fora do manager é anti-pattern — esse é o ponto central
+de ter encapsulamento por manager em vez de god object.

@@ -26,24 +26,34 @@ Este é o padrão da indústria para game servers de simulação de mundo (World
 
 ```
 main.go (startup + wiring + graceful shutdown)
-  │
-  ├── GameLoop            goroutine PRINCIPAL — sequencial, processa todos os managers por tick
-  │     │
-  │     ├── world.ProcessTick(gameState)     ← atualiza dia/noite, clima, blocos
-  │     ├── npc.ProcessTick(gameState)       ← rotinas, IA, fofoca (vê estado atualizado do world)
-  │     ├── combat.ProcessTick(gameState)    ← resolve turnos de combates ativos
-  │     ├── story.ProcessTick(gameState)     ← avalia triggers, quests, arcos
-  │     ├── economy.ProcessTick(gameState)   ← preços, comércio pendente
-  │     └── persist.QueueDirty(gameState)    ← enfileira entidades sujas para goroutine de I/O
-  │
-  ├── PersistManager      goroutine de I/O — snapshots async (ver ADR-006)
-  ├── AdminManager        goroutine de I/O — comandos administrativos
-  ├── EventBus            goroutine — notificações assíncronas (clientes, logging, métricas)
-  │
-  └── Per-connection (1 par por jogador):
-      ├── readPump        goroutine — lê WebSocket → fila de comandos para o GameLoop
-      └── writePump       goroutine — envia estado → WebSocket
+│
+├── GameLoop            goroutine PRINCIPAL — sequencial, executa a reação do tick
+│     │
+│     │  Ordem de chamada dentro do tick (wiring do main):
+│     │
+│     ├── command.ProcessPlayerCommands(tickCount, cmds)  ← drena fila de comandos
+│     ├── worldManager.ProcessTick()                      ← avança GameTime, clima, blocos
+│     ├── npcManager.ProcessTick(worldMgr.GameTime())     ← NPCs veem tempo atualizado
+│     ├── (futuro) mobManager.ProcessTick(...)            ← respawn, patrulha, aggro
+│     ├── (futuro) combatManager.ProcessTick(...)         ← resolve turnos ativos
+│     ├── (futuro) storyManager.ProcessTick(...)          ← triggers, quests, arcos
+│     ├── (futuro) economyManager.ProcessTick(...)        ← preços, comércio pendente
+│     ├── snap := snapshot.Build(tickCount, worldMgr, npcMgr, ...)
+│     └── adminHub.Publish(snap)                          ← entrega snapshot ao admin
+│
+├── PersistManager      goroutine de I/O — recebe Snapshot, grava em SQLite (ver ADR-006)
+├── EventBus            goroutine — notificações assíncronas (clientes, logging, métricas)
+│
+└── Per-connection (1 par por jogador):
+├── readPump        goroutine — lê WebSocket → PlayerRouter → command.Queue
+└── writePump       goroutine — envia snapshots/eventos → WebSocket
 ```
+
+> **Nota:** cada manager é dono do próprio estado. Não existe um
+> `GameState` central. A comunicação entre managers acontece via
+> getters read-only (`worldMgr.GameTime()`), passados como parâmetro
+> no `ProcessTick` do manager seguinte. Ver [ADR-007](ADR-007-estrutura-pacotes-server.md)
+> para a justificativa dessa escolha.
 
 ### Por que sequencial e não paralelo
 
@@ -105,15 +115,27 @@ Interface:
 
 ```
 time.Ticker dispara → GameLoop acorda
-  1. world.ProcessTick(state)     → dia vira noite, gera evento "period_changed"
-  2. npc.ProcessTick(state)       → NPCs veem noite, vão dormir, gera "npc_moved"
-  3. combat.ProcessTick(state)    → resolve turno do combate ativo
-  4. story.ProcessTick(state)     → avalia se threshold de quest foi atingido
-  5. economy.ProcessTick(state)   → processa trades pendentes
-  6. persist.QueueDirty(state)    → enfileira entidades modificadas
+  1. command.ProcessPlayerCommands(tickCount, cmds)
+        → processa comandos enfileirados desde o tick anterior
+  2. worldManager.ProcessTick()
+        → dia vira noite, gera evento "period_changed"
+  3. npcManager.ProcessTick(worldMgr.GameTime())
+        → NPCs veem noite, vão dormir, gera "npc_moved"
+  4. combatManager.ProcessTick(...)      (futuro)
+        → resolve turno do combate ativo
+  5. storyManager.ProcessTick(...)       (futuro)
+        → avalia se threshold de quest foi atingido
+  6. economyManager.ProcessTick(...)     (futuro)
+        → processa trades pendentes
+  7. snap := snapshot.Build(tickCount, worldMgr, npcMgr, ...)
+        → cópia imutável do estado agregado
+  8. adminHub.Publish(snap)
+        → entrega ao admin hub (goroutine separada serializa e envia)
+  9. persistManager.QueueDirty(snap)     (futuro, Fase 1+)
+        → enfileira entidades modificadas para I/O async
 
-  EventBus.Publish("npc_moved", ...) → writePump envia para clientes nearby
-  EventBus.Publish("period_changed", ...) → writePump atualiza HUD de todos
+  EventBus.Publish("npc_moved", ...)       → writePump envia para clientes nearby
+  EventBus.Publish("period_changed", ...)  → writePump atualiza HUD de todos
 ```
 
 ### Fila de Comandos do Jogador
@@ -133,16 +155,23 @@ Isso garante que ações do jogador são processadas no contexto correto do tick
 ### Estrutura de Módulos
 
 > A organização concreta dos pacotes está definida no [ADR-007](ADR-007-estrutura-pacotes-server.md).
-> Resumo: layout flat por domínio na raiz de `server/`. Cada manager é um
-> pacote (`world/`, `npc/`, `combat/`, ...). Estado mutável central em
-> `state/`. I/O em `net/` e `persist/`. Sem `internal/`, sem `cmd/`.
+> Resumo: layout flat por domínio na raiz de `server/`. Cada manager é
+> dono do próprio estado (`world/` dono do `GameTime`, `npc/` dono dos
+> NPCs). O pacote `snapshot/` agrega os managers em uma cópia imutável
+> por tick. I/O em `net/` e `persist/`. Sem `internal/`, sem `cmd/`,
+> sem `state/` central.
 
-A relação entre os pacotes segue duas regras invioláveis:
+A relação entre os pacotes segue três regras invioláveis:
 
-1. **Managers não importam outros managers** — comunicação via
-   `state.GameState` que o GameLoop passa em cada `ProcessTick()`.
-2. **Pacotes de I/O não conhecem lógica de jogo** — recebem comandos
-   via `command.Queue`, devolvem resultados via channels ou snapshots.
+1. **Managers não importam comportamento de outros managers** —
+   podem importar tipos universais (ex: `npc` importa `world.GameTime`
+   para a assinatura do `ProcessTick`), mas nunca métodos de outro manager.
+2. **`snapshot/` é o único agregador transversal** — importa todos os
+   managers e monta uma cópia imutável a cada tick. Ninguém importa
+   `snapshot/` exceto `main.go` e consumidores externos (admin hub,
+   persist).
+3. **Pacotes de I/O não conhecem lógica de jogo** — recebem comandos
+   via `command.Queue`, devolvem resultados via channels e snapshots.
 
 ### Quando Considerar Paralelismo no Game Loop
 
