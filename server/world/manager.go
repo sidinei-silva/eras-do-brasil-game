@@ -1,14 +1,26 @@
 package world
 
-import "time"
+import (
+	"log/slog"
+	"time"
+)
 
 type Manager struct {
 	gameTime *GameTime
-	// futuramente: blocks, climate
+	blocks   map[string]*Block
 }
 
-func NewManager() *Manager {
-	return &Manager{gameTime: &GameTime{}}
+func NewManager() (*Manager, error) {
+
+	//Load blocks
+	blocks, err := LoadBlocksFromFile()
+
+	if err != nil {
+		slog.Error("Erro ao carregar blocos", "err", err)
+		return nil, err
+	}
+
+	return &Manager{gameTime: &GameTime{}, blocks: blocks}, nil
 }
 
 func (m *Manager) ProcessTick() {
@@ -17,4 +29,17 @@ func (m *Manager) ProcessTick() {
 
 func (m *Manager) GameTime() GameTime {
 	return *m.gameTime // retorna cópia, leitor não pode mutar
+}
+
+func (m *Manager) GetBlockById(id string) (*Block, bool) {
+	block, exists := m.blocks[id]
+	return block, exists
+}
+
+func (m *Manager) GetAllBlocks() []*Block {
+	blocks := make([]*Block, 0, len(m.blocks))
+	for _, block := range m.blocks {
+		blocks = append(blocks, block)
+	}
+	return blocks
 }

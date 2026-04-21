@@ -34,12 +34,12 @@ func Build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
 	snap := &Snapshot{
 		Tick:     tick,
 		GameTime: worldMgr.GameTime(),
-		NPCs:     make(map[string]npc.Npc, len(npcMgr.All())),
+		NPCs:     make(map[string]npc.Npc, len(npcMgr.GetAllNpcs())),
 	}
 
 	// Cópia por valor (não ponteiro) para garantir imutabilidade
 	// do snapshot após Build retornar.
-	for k, v := range npcMgr.All() {
+	for k, v := range npcMgr.GetAllNpcs() {
 		snap.NPCs[k] = *v
 	}
 

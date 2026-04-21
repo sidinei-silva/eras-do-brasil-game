@@ -31,8 +31,15 @@ func (m *Manager) ProcessTick(gameTime world.GameTime) {
 	}
 }
 
-func (m *Manager) All() map[string]*Npc { return m.npcs }
-func (m *Manager) Get(id string) (*Npc, bool) {
+func (m *Manager) GetAllNpcs() map[string]*Npc {
+	npcs := make(map[string]*Npc, len(m.npcs))
+	for k, v := range m.npcs {
+		npcs[k] = v
+	}
+
+	return npcs
+}
+func (m *Manager) GetNpcById(id string) (*Npc, bool) {
 	n, ok := m.npcs[id]
 	return n, ok
 }

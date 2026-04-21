@@ -50,8 +50,6 @@ func LoadNpcsFromFile() (map[string]*Npc, error) {
 		return nil, err
 	}
 
-	slog.Info("NPCs carregados com sucesso", "count", len(data.Npcs))
-
 	npcs := make(map[string]*Npc)
 
 	for _, npcData := range data.Npcs {

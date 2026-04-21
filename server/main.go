@@ -47,13 +47,23 @@ func main() {
 	adminHub.SetRouter(adminRouter)
 	playerHub.SetRouter(playerRouter)
 
-	worldManager := world.NewManager()
+	worldManager, worldErr := world.NewManager()
+	if worldErr != nil {
+		slog.Error("Erro ao criar World Manager:", "worldErr", worldErr)
+		os.Exit(1)
+	}
+
+	blocks := worldManager.GetAllBlocks()
+	slog.Info("Blocos carregados no World Manager", "count", len(blocks))
 
 	npcManager, npcErr := npc.NewManager()
 	if npcErr != nil {
 		slog.Error("Erro ao criar NPC Manager:", "npcErr", npcErr)
 		os.Exit(1)
 	}
+
+	npcs := npcManager.GetAllNpcs()
+	slog.Info("NPCs carregados no NPC Manager", "count", len(npcs))
 
 	gameLoop := engine.NewGameLoop(1 * time.Second)
 

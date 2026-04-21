@@ -1,0 +1,169 @@
+{
+    "blocks": [
+        {
+            "connections": [
+                {
+                    "terrain": "forest_path",
+                    "toBlockId": "floresta_do_norte",
+                    "travelMinutes": 10
+                }
+            ],
+            "description": "Hub seguro da Mata Costeira, com servicos essenciais e descanso melhorado.",
+            "id": "vila_sao_tome",
+            "levelRange": [
+                0,
+                0
+            ],
+            "mobTable": [],
+            "name": "Vila de Sao Tome",
+            "region": "mata_costeira",
+            "resources": [],
+            "rules": [
+                {
+                    "effect": "long_rest_faster_full_recovery",
+                    "id": "vila_improved_rest",
+                    "type": "improved_rest"
+                }
+            ],
+            "services": [
+                {
+                    "actions": [
+                        "repair",
+                        "buy_basic_weapons"
+                    ],
+                    "id": "blacksmith",
+                    "name": "Ferreiro"
+                },
+                {
+                    "actions": [
+                        "rumors",
+                        "rest",
+                        "buy_supplies"
+                    ],
+                    "id": "tavern",
+                    "name": "Taverna"
+                },
+                {
+                    "actions": [
+                        "remove_light_curse"
+                    ],
+                    "id": "chapel",
+                    "name": "Capela"
+                }
+            ],
+            "tags": [
+                "safe",
+                "hub",
+                "starter"
+            ],
+            "type": "urban"
+        },
+        {
+            "connections": [
+                {
+                    "terrain": "forest_path",
+                    "toBlockId": "vila_sao_tome",
+                    "travelMinutes": 10
+                },
+                {
+                    "terrain": "distortion_path",
+                    "toBlockId": "ruinas_queimadas",
+                    "travelMinutes": 15
+                }
+            ],
+            "description": "Mata densa de exploracao principal, com cobertura natural e trilhas antigas.",
+            "id": "floresta_do_norte",
+            "levelRange": [
+                1,
+                3
+            ],
+            "mobTable": [
+                {
+                    "enemyId": "wolf",
+                    "quantity": "1d2",
+                    "spawnChance": 0.6
+                },
+                {
+                    "enemyId": "lesser_spirit",
+                    "quantity": "1d1",
+                    "spawnChance": 0.4
+                }
+            ],
+            "name": "Floresta do Norte",
+            "region": "mata_costeira",
+            "resources": [
+                {
+                    "quantity": "1d3",
+                    "rarity": "uncommon",
+                    "resourceId": "iron_wood",
+                    "spawnChance": 0.55
+                }
+            ],
+            "rules": [
+                {
+                    "effect": "ranged_defense_bonus_at_distance",
+                    "id": "floresta_natural_cover",
+                    "type": "natural_cover"
+                }
+            ],
+            "services": [],
+            "tags": [
+                "exploration",
+                "forest",
+                "mid_route"
+            ],
+            "type": "dense_forest"
+        },
+        {
+            "connections": [
+                {
+                    "terrain": "distortion_path",
+                    "toBlockId": "floresta_do_norte",
+                    "travelMinutes": 15
+                }
+            ],
+            "description": "Area de ruinas e cinzas espirituais, com atmosfera de terror e ecos da Ruptura.",
+            "id": "ruinas_queimadas",
+            "levelRange": [
+                4,
+                5
+            ],
+            "mobTable": [
+                {
+                    "enemyId": "corrupted_spirit",
+                    "quantity": "1d2",
+                    "spawnChance": 0.7
+                },
+                {
+                    "enemyId": "bandeirante_scout",
+                    "quantity": "1d1",
+                    "spawnChance": 0.3
+                }
+            ],
+            "name": "Ruinas Queimadas",
+            "region": "mata_costeira",
+            "resources": [
+                {
+                    "quantity": "1d2",
+                    "rarity": "rare",
+                    "resourceId": "spiritual_ashes",
+                    "spawnChance": 0.5
+                }
+            ],
+            "rules": [
+                {
+                    "effect": "fear_checks_and_false_signals",
+                    "id": "ruinas_spiritual_echoes",
+                    "type": "spiritual_echoes"
+                }
+            ],
+            "services": [],
+            "tags": [
+                "danger",
+                "ruins",
+                "spiritual"
+            ],
+            "type": "ruins"
+        }
+    ]
+}
