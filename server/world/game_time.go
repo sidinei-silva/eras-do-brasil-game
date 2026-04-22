@@ -17,24 +17,30 @@ type GameTime struct {
 }
 
 func NewGameTime() GameTime {
+	time := time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC)
+	periodOfDay := CalculatePeriodOfDay(time)
 	return GameTime{
-		Time: time.Date(1500, 1, 1, 6, 0, 0, 0, time.UTC),
+		Time:        time,
+		PeriodOfDay: periodOfDay,
 	}
 }
 
 func (gt *GameTime) AdvanceTime(duration time.Duration) {
 	gt.Time = gt.Time.Add(duration)
+	gt.PeriodOfDay = CalculatePeriodOfDay(gt.Time)
+}
 
-	hour := gt.Time.Hour()
+func CalculatePeriodOfDay(time time.Time) PeriodOfDay {
+	hour := time.Hour()
 
 	switch {
 	case hour >= 6 && hour < 12:
-		gt.PeriodOfDay = Morning
+		return Morning
 	case hour >= 12 && hour < 18:
-		gt.PeriodOfDay = Afternoon
+		return Afternoon
 	case hour >= 18 && hour < 24:
-		gt.PeriodOfDay = Night
+		return Night
 	default:
-		gt.PeriodOfDay = MidNight
+		return MidNight
 	}
 }

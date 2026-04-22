@@ -3,25 +3,29 @@
         {
             "connections": [
                 {
-                    "terrain": "forest_path",
+                    "terrain": "dense_trail",
                     "toBlockId": "floresta_do_norte",
-                    "travelMinutes": 10
+                    "travelMinutes": 25
                 }
             ],
-            "description": "Hub seguro da Mata Costeira, com servicos essenciais e descanso melhorado.",
+            "description": "O último bastião de normalidade na costa. Uma vila colonial erguida às pressas entre pau-a-pique e pedra, onde o cheiro de ferrugem e peixe seco se mistura ao som distante de rezas na capela. Aqui se descansa, se comercia e se ouve os rumores que chegam da mata — mas ninguém dorme em paz desde que a Ruptura abriu.",
             "id": "vila_sao_tome",
-            "levelRange": [
-                0,
-                0
-            ],
+            "levelRange": {
+                "max": 0,
+                "min": 0
+            },
             "mobTable": [],
-            "name": "Vila de Sao Tome",
+            "name": "Vila de São Tomé",
             "region": "mata_costeira",
             "resources": [],
             "rules": [
                 {
-                    "effect": "long_rest_faster_full_recovery",
-                    "id": "vila_improved_rest",
+                    "description": "Descanso Longo leva ~10 min reais e recupera 100% de Vida e recursos.",
+                    "id": "improved_rest",
+                    "params": {
+                        "recoveryPercent": 100,
+                        "restDurationMinutes": 10
+                    },
                     "type": "improved_rest"
                 }
             ],
@@ -61,109 +65,148 @@
         {
             "connections": [
                 {
-                    "terrain": "forest_path",
+                    "terrain": "dense_trail",
                     "toBlockId": "vila_sao_tome",
-                    "travelMinutes": 10
+                    "travelMinutes": 25
                 },
                 {
-                    "terrain": "distortion_path",
-                    "toBlockId": "ruinas_queimadas",
-                    "travelMinutes": 15
+                    "terrain": "animal_trail",
+                    "toBlockId": "toca_da_fera",
+                    "travelMinutes": 12
                 }
             ],
-            "description": "Mata densa de exploracao principal, com cobertura natural e trilhas antigas.",
+            "description": "Uma mata densa, antiga e vibrante, onde a luz do sol mal toca o chão. As copas das árvores formam um teto vivo que abafa sons e esconde predadores. Trilhas antigas serpenteiam entre raízes expostas e cipós grossos — quem sai do caminho raramente volta pelo mesmo lugar.",
             "id": "floresta_do_norte",
-            "levelRange": [
-                1,
-                3
-            ],
+            "levelRange": {
+                "max": 3,
+                "min": 1
+            },
             "mobTable": [
                 {
                     "enemyId": "wolf",
-                    "quantity": "1d2",
+                    "quantity": {
+                        "max": 3,
+                        "min": 1
+                    },
                     "spawnChance": 0.6
                 },
                 {
                     "enemyId": "lesser_spirit",
-                    "quantity": "1d1",
-                    "spawnChance": 0.4
+                    "quantity": {
+                        "max": 1,
+                        "min": 1
+                    },
+                    "spawnChance": 0.35
                 }
             ],
             "name": "Floresta do Norte",
             "region": "mata_costeira",
             "resources": [
                 {
-                    "quantity": "1d3",
+                    "gatherDC": 14,
+                    "quantity": {
+                        "max": 3,
+                        "min": 1
+                    },
                     "rarity": "uncommon",
                     "resourceId": "iron_wood",
-                    "spawnChance": 0.55
+                    "spawnChance": 0.5
+                },
+                {
+                    "gatherDC": 8,
+                    "quantity": {
+                        "max": 6,
+                        "min": 2
+                    },
+                    "rarity": "common",
+                    "resourceId": "cipo_imbe_fiber",
+                    "spawnChance": 0.8
                 }
             ],
             "rules": [
                 {
-                    "effect": "ranged_defense_bonus_at_distance",
-                    "id": "floresta_natural_cover",
+                    "description": "Cobertura Natural: todos os personagens ganham +1 de Defesa contra ataques à distância se estiverem a mais de 5 metros do atacante.",
+                    "id": "natural_cover",
+                    "params": {
+                        "condition": "ranged",
+                        "defenseBonus": 1,
+                        "minDistance": 5
+                    },
                     "type": "natural_cover"
                 }
             ],
             "services": [],
             "tags": [
                 "exploration",
-                "forest",
-                "mid_route"
+                "forest"
             ],
             "type": "dense_forest"
         },
         {
             "connections": [
                 {
-                    "terrain": "distortion_path",
+                    "terrain": "animal_trail",
                     "toBlockId": "floresta_do_norte",
-                    "travelMinutes": 15
+                    "travelMinutes": 12
                 }
             ],
-            "description": "Area de ruinas e cinzas espirituais, com atmosfera de terror e ecos da Ruptura.",
-            "id": "ruinas_queimadas",
-            "levelRange": [
-                4,
-                5
-            ],
+            "description": "O ar muda antes de chegar. O cheiro de sangue velho e pelo molhado marca o território da Onça Pintada — a predadora espiritual que guarda este trecho da floresta. Carcaças de presas anteriores pendem dos galhos baixos como avisos. Poucos entram. Menos ainda saem sem cicatrizes.",
+            "id": "toca_da_fera",
+            "levelRange": {
+                "max": 4,
+                "min": 3
+            },
             "mobTable": [
                 {
-                    "enemyId": "corrupted_spirit",
-                    "quantity": "1d2",
-                    "spawnChance": 0.7
+                    "enemyId": "onca_pintada",
+                    "quantity": {
+                        "max": 1,
+                        "min": 1
+                    },
+                    "spawnChance": 0.85
                 },
                 {
-                    "enemyId": "bandeirante_scout",
-                    "quantity": "1d1",
-                    "spawnChance": 0.3
+                    "enemyId": "wolf",
+                    "quantity": {
+                        "max": 2,
+                        "min": 1
+                    },
+                    "spawnChance": 0.4
                 }
             ],
-            "name": "Ruinas Queimadas",
+            "name": "Toca da Fera",
             "region": "mata_costeira",
             "resources": [
                 {
-                    "quantity": "1d2",
-                    "rarity": "rare",
-                    "resourceId": "spiritual_ashes",
-                    "spawnChance": 0.5
+                    "gatherDC": 10,
+                    "quantity": {
+                        "max": 3,
+                        "min": 1
+                    },
+                    "rarity": "common",
+                    "resourceId": "cipo_imbe_fiber",
+                    "spawnChance": 0.6
                 }
             ],
             "rules": [
                 {
-                    "effect": "fear_checks_and_false_signals",
-                    "id": "ruinas_spiritual_echoes",
-                    "type": "spiritual_echoes"
+                    "description": "Território de Predador: testes de furtividade têm CD aumentada. A Onça Pintada recebe Vantagem em iniciativa e pode emboscar personagens que falharem em Percepção.",
+                    "id": "predator_territory",
+                    "params": {
+                        "ambushPerceptionDC": 14,
+                        "predatorInitiativeAdvantage": true,
+                        "stealthDCModifier": 2
+                    },
+                    "type": "predator_territory"
                 }
             ],
             "services": [],
             "tags": [
                 "danger",
-                "ruins",
-                "spiritual"
+                "boss",
+                "forest"
             ],
-            "type": "ruins"
+            "type": "dense_forest"
         }
     ]
 }

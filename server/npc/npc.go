@@ -10,7 +10,7 @@ const (
 )
 
 type Npc struct {
-	ID              string           // Unique identifier for the NPC
+	Id              string           // Unique identifier for the NPC
 	Name            string           // Name of the NPC
 	Role            Role             // Role or profession of the NPC (e.g., merchant, quest giver, guard)
 	CurrentZone     string           // Current zone where the NPC is located
@@ -23,7 +23,7 @@ type Npc struct {
 
 func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction) *Npc {
 	return &Npc{
-		ID:              id,
+		Id:              id,
 		Name:            name,
 		Role:            role,
 		CurrentZone:     currentZone,

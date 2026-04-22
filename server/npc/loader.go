@@ -28,7 +28,7 @@ type Data struct {
 	Npcs []TemplateDTO `json:"npcs"`
 }
 
-func LoadNpcsFromFile() (map[string]*Npc, error) {
+func LoadNpcsFromFile() ([]*Npc, error) {
 	filePath := os.Getenv("NPCS_FILE")
 
 	if filePath == "" {
@@ -50,7 +50,7 @@ func LoadNpcsFromFile() (map[string]*Npc, error) {
 		return nil, err
 	}
 
-	npcs := make(map[string]*Npc)
+	npcs := make([]*Npc, 0, len(data.Npcs))
 
 	for _, npcData := range data.Npcs {
 		npc := NewNpc(
@@ -72,7 +72,7 @@ func LoadNpcsFromFile() (map[string]*Npc, error) {
 				return schedule
 			}(),
 		)
-		npcs[npc.Name] = npc
+		npcs = append(npcs, npc)
 	}
 
 	return npcs, nil

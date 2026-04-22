@@ -7,7 +7,7 @@ import (
 )
 
 type Manager struct {
-	npcs map[string]*Npc
+	npcs []*Npc
 }
 
 func NewManager() (*Manager, error) {
@@ -31,15 +31,19 @@ func (m *Manager) ProcessTick(gameTime world.GameTime) {
 	}
 }
 
-func (m *Manager) GetAllNpcs() map[string]*Npc {
-	npcs := make(map[string]*Npc, len(m.npcs))
-	for k, v := range m.npcs {
-		npcs[k] = v
+func (m *Manager) GetAllNpcs() []*Npc {
+	npcs := make([]*Npc, 0, len(m.npcs))
+	for _, npc := range m.npcs {
+		npcs = append(npcs, npc)
 	}
 
 	return npcs
 }
 func (m *Manager) GetNpcById(id string) (*Npc, bool) {
-	n, ok := m.npcs[id]
-	return n, ok
+	for _, npc := range m.npcs {
+		if npc.Id == id {
+			return npc, true
+		}
+	}
+	return nil, false
 }

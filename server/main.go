@@ -53,6 +53,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.Info("Game Time inicializado", "gameTime", worldManager.GameTime())
 	blocks := worldManager.GetAllBlocks()
 	slog.Info("Blocos carregados no World Manager", "count", len(blocks))
 

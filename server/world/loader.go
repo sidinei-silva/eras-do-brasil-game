@@ -7,9 +7,14 @@ import (
 )
 
 type TemplateConnection struct {
-	Terrain           string `json:"terrain"`
-	ToBlockId         string `json:"toBlockId"`
-	TravelTimeMinutes int    `json:"travelTimeMinutes"`
+	Terrain       string `json:"terrain"`
+	ToBlockId     string `json:"toBlockId"`
+	TravelMinutes int    `json:"travelMinutes"`
+}
+
+type TemplateLevelRange struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
 }
 
 type TemplateBlock struct {
@@ -18,7 +23,7 @@ type TemplateBlock struct {
 	Type        string               `json:"type" validate:"oneof=urban dense_forest mountain water ruins wasteland"`
 	Description string               `json:"description"`
 	Connections []TemplateConnection `json:"connections"`
-	LevelRange  [2]int               `json:"levelRange"`
+	LevelRange  TemplateLevelRange   `json:"levelRange"`
 	Region      Region               `json:"region"`
 	Tags        []string             `json:"tags"`
 }
@@ -27,7 +32,7 @@ type Data struct {
 	Blocks []TemplateBlock `json:"blocks"`
 }
 
-func LoadBlocksFromFile() (map[string]*Block, error) {
+func LoadBlocksFromFile() ([]*Block, error) {
 	filePath := os.Getenv("BLOCKS_FILE")
 
 	if filePath == "" {
@@ -48,29 +53,32 @@ func LoadBlocksFromFile() (map[string]*Block, error) {
 		return nil, err
 	}
 
-	blocks := make(map[string]*Block)
+	blocks := make([]*Block, 0, len(data.Blocks))
 
 	for _, blockData := range data.Blocks {
 		block := NewBlock(
 			blockData.Id,
 			blockData.Name,
-			blockData.Type,
+			BlockType(blockData.Type),
 			blockData.Description,
-			blockData.LevelRange,
+			LevelRange{
+				Min: blockData.LevelRange.Min,
+				Max: blockData.LevelRange.Max,
+			},
 			blockData.Region,
 			blockData.Tags,
 		)
 
 		for _, connData := range blockData.Connections {
 			connection := Connection{
-				Terrain:           connData.Terrain,
-				ToBlockId:         connData.ToBlockId,
-				TravelTimeMinutes: connData.TravelTimeMinutes,
+				Terrain:       connData.Terrain,
+				ToBlockId:     connData.ToBlockId,
+				TravelMinutes: connData.TravelMinutes,
 			}
 			block.Connections = append(block.Connections, connection)
 		}
 
-		blocks[block.Id] = block
+		blocks = append(blocks, block)
 	}
 
 	return blocks, nil

@@ -7,20 +7,21 @@ import (
 
 type Manager struct {
 	gameTime *GameTime
-	blocks   map[string]*Block
+	blocks   []*Block
 }
 
 func NewManager() (*Manager, error) {
 
 	//Load blocks
 	blocks, err := LoadBlocksFromFile()
+	gameTime := NewGameTime()
 
 	if err != nil {
 		slog.Error("Erro ao carregar blocos", "err", err)
 		return nil, err
 	}
 
-	return &Manager{gameTime: &GameTime{}, blocks: blocks}, nil
+	return &Manager{gameTime: &gameTime, blocks: blocks}, nil
 }
 
 func (m *Manager) ProcessTick() {
@@ -32,8 +33,12 @@ func (m *Manager) GameTime() GameTime {
 }
 
 func (m *Manager) GetBlockById(id string) (*Block, bool) {
-	block, exists := m.blocks[id]
-	return block, exists
+	for _, block := range m.blocks {
+		if block.Id == id {
+			return block, true
+		}
+	}
+	return nil, false
 }
 
 func (m *Manager) GetAllBlocks() []*Block {
