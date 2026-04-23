@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"slices"
 )
 
 type TemplateConnection struct {
@@ -70,6 +71,17 @@ func LoadBlocksFromFile() ([]*Block, error) {
 		)
 
 		for _, connData := range blockData.Connections {
+
+			checkIfExist := slices.ContainsFunc(data.Blocks, func(item TemplateBlock) bool {
+				return item.Id == connData.ToBlockId
+			})
+
+			if !checkIfExist {
+				slog.Error("Conexão para bloco inexistente", "fromBlockId", blockData.Id, "toBlockId", connData.ToBlockId)
+				os.Exit(1)
+				continue
+			}
+
 			connection := Connection{
 				Terrain:       connData.Terrain,
 				ToBlockId:     connData.ToBlockId,

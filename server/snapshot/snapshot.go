@@ -17,6 +17,7 @@ type Snapshot struct {
 	Tick     int64
 	GameTime world.GameTime
 	NPCs     []npc.Npc
+	Blocks   []world.Block
 
 	// Futuros campos conforme novos managers entrarem:
 	// Mobs     map[string]mob.Mob
@@ -35,12 +36,17 @@ func Build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
 		Tick:     tick,
 		GameTime: worldMgr.GameTime(),
 		NPCs:     make([]npc.Npc, 0, len(npcMgr.GetAllNpcs())),
+		Blocks:   make([]world.Block, 0, len(worldMgr.GetAllBlocks())),
 	}
 
 	// Cópia por valor (não ponteiro) para garantir imutabilidade
 	// do snapshot após Build retornar.
 	for _, v := range npcMgr.GetAllNpcs() {
 		snap.NPCs = append(snap.NPCs, *v)
+	}
+
+	for _, v := range worldMgr.GetAllBlocks() {
+		snap.Blocks = append(snap.Blocks, *v)
 	}
 
 	return snap
