@@ -34,18 +34,18 @@
 
 ### 1.2 — Blocos e Zonas **PRÓXIMO**
 
-> **Refinamento:** [refinements/1.3-blocos-zonas.md](product/refinements/1.3-blocos-zonas.md)
+> **Refinamento:** [refinements/1.2-blocos-zonas.md](product/refinements/1.2-blocos-zonas.md)
 
-- [ ] Struct `Block` com ID, nome, tipo (Vila/Floresta/Ruínas), descrição
-- [ ] Grafo de conectividade entre blocos (adjacência, custo de travessia em minutos de jogo)
-- [ ] 3 blocos iniciais da Mata Costeira ligados (Vila de São Tomé → Floresta do Norte → Ruínas Queimadas)
-- [ ] `world.Manager` dono dos blocos; getters pro snapshot
-- [ ] Template JSON de bloco + loader
-- [ ] Admin pode listar blocos e ver conexões
+- [x] Struct `Block` com ID, nome, tipo (Vila/Floresta/Ruínas), descrição
+- [x] Grafo de conectividade entre blocos (adjacência, custo de travessia em minutos de jogo)
+- [x] 3 blocos iniciais da Mata Costeira ligados (Vila de São Tomé → Floresta do Norte → Ruínas Queimadas)
+- [x] `world.Manager` dono dos blocos; getters pro snapshot
+- [x] Template JSON de bloco + loader
+- [x] Admin pode listar blocos e ver conexões
 
 ### 1.3 — NPCs (Utility AI intermediário) —
 
-> **Refinamento:** [refinements/1.2-utility-ai-intermediario.md](product/refinements/1.2-utility-ai-intermediario.md)
+> **Refinamento:** [refinements/1.3-utility-ai-intermediario.md](product/refinements/1.3-utility-ai-intermediario.md)
 
 - [ ] Adicionar need `Social` (decaimento na ausência de outros NPCs no mesmo zone string)
 - [ ] Adicionar need `Seguranca` (placeholder fixo, sem efeito real até blocos existirem)
