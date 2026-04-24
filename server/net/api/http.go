@@ -31,6 +31,7 @@ func (httpServer *HTTPServer) StartHTTPServer(ctx context.Context, wg *sync.Wait
 
 	slog.Info("server iniciado 1", "addr", httpServer.server.Addr)
 	slog.Info("admin dashboard disponível em http://localhost:8080/admin/")
+	slog.Info("admin dashboard disponível em http://localhost:8080/admin2/")
 	if err := httpServer.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("erro no servidor", "err", err)
 	}

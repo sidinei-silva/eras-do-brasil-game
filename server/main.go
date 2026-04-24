@@ -47,7 +47,7 @@ func main() {
 	adminHub.SetRouter(adminRouter)
 	playerHub.SetRouter(playerRouter)
 
-	worldManager, worldErr := world.NewManager()
+	worldManager, worldErr := world.NewManager(1 * time.Hour) // 1 tick = 1h de jogo
 	if worldErr != nil {
 		slog.Error("Erro ao criar World Manager:", "worldErr", worldErr)
 		os.Exit(1)

@@ -6,11 +6,12 @@ import (
 )
 
 type Manager struct {
-	gameTime *GameTime
-	blocks   []*Block
+	gameTime     *GameTime     // Gerencia o tempo do jogo
+	blocks       []*Block      // Blocos do mundo
+	tickDuration time.Duration // Quanto tempo o jogo avança a cada tick
 }
 
-func NewManager() (*Manager, error) {
+func NewManager(tickDuration time.Duration) (*Manager, error) {
 
 	//Load blocks
 	blocks, err := LoadBlocksFromFile()
@@ -21,11 +22,11 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 
-	return &Manager{gameTime: &gameTime, blocks: blocks}, nil
+	return &Manager{gameTime: &gameTime, blocks: blocks, tickDuration: tickDuration}, nil
 }
 
 func (m *Manager) ProcessTick() {
-	m.gameTime.AdvanceTime(1 * time.Hour)
+	m.gameTime.AdvanceTime(m.tickDuration)
 }
 
 func (m *Manager) GameTime() GameTime {
