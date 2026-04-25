@@ -47,7 +47,11 @@ func main() {
 	adminHub.SetRouter(adminRouter)
 	playerHub.SetRouter(playerRouter)
 
-	worldManager, worldErr := world.NewManager(1 * time.Hour) // 1 tick = 1h de jogo
+	// tickDuration: quanto tempo de jogo avança por tick (tickInterval = 1s).
+	// Produção: 12 * time.Second → 1h de jogo = 5 min reais, 1 dia de jogo = 2h reais (GDD §8.2 e §8.9)
+	// Atual: 1h para observar o comportamento dos NPCs com o passar do tempo de forma acelerada.
+	tickDuration := 1 * time.Hour
+	worldManager, worldErr := world.NewManager(tickDuration)
 	if worldErr != nil {
 		slog.Error("Erro ao criar World Manager:", "worldErr", worldErr)
 		os.Exit(1)
@@ -66,7 +70,7 @@ func main() {
 	npcs := npcManager.GetAllNpcs()
 	slog.Info("NPCs carregados no NPC Manager", "count", len(npcs))
 
-	gameLoop := engine.NewGameLoop(1 * time.Second)
+	gameLoop := engine.NewGameLoop()
 
 	// 2. Definição das Reações do Tick
 	gameLoop.SetReactionsForTick(func() {

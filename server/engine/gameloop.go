@@ -8,18 +8,26 @@ import (
 	"time"
 )
 
+// tickInterval é o tempo real entre cada tick do game loop.
+// Mantido em 1s para garantir responsividade do jogador (comandos processados em até 1s).
+// A velocidade do tempo de jogo é controlada pelo tickDuration no WorldManager, não aqui.
+const tickInterval = 1 * time.Second
+
 type GameLoop struct {
-	tickCount        atomic.Int64
-	interval         time.Duration
-	running          atomic.Bool
-	cancel           context.CancelFunc
+	// tickCount armazena a quantidade total de ticks já executados no loop.
+	tickCount atomic.Int64
+	// running indica se o game loop está em execução no momento.
+	running atomic.Bool
+	// cancel guarda a função usada para cancelar o contexto interno do loop.
+	cancel context.CancelFunc
+	// LastTickDuration registra quanto tempo o último tick levou para ser processado.
 	LastTickDuration time.Duration
+	// reactionsForTick contém a função chamada a cada tick para processar as reações do jogo.
 	reactionsForTick func()
 }
 
-func NewGameLoop(interval time.Duration) *GameLoop {
+func NewGameLoop() *GameLoop {
 	return &GameLoop{
-		interval:         interval,
 		reactionsForTick: func() {},
 	}
 }
@@ -53,7 +61,7 @@ func (gl *GameLoop) StartGameLoop(ctx context.Context, wg *sync.WaitGroup) {
 
 	slog.Info("Starting game loop")
 
-	ticker := time.NewTicker(gl.interval)
+	ticker := time.NewTicker(tickInterval)
 	defer ticker.Stop()
 
 	for {
