@@ -1,7 +1,5 @@
 package npc
 
-import "github.com/sidinei-silva/eras-do-brasil-game/server/world"
-
 type Activity string
 
 const (
@@ -13,7 +11,17 @@ const (
 )
 
 type ScheduleAction struct {
-	Activity Activity          // The activity the NPC will perform
-	Location string            // The location where the activity will take place
-	Period   world.PeriodOfDay // The period of the day when the activity will occur
+	Activity  Activity // A atividade que o NPC irá realizar
+	Location  string   // O local onde a atividade acontecerá
+	StartHour int      // Hora de início da atividade (0-23)
+	EndHour   int      // Hora de término da atividade (0-23)
+}
+
+func (npc *Npc) ActiveScheduleAt(hour int) (ScheduleAction, bool) {
+	for _, action := range npc.Schedule {
+		if hour >= action.StartHour && hour < action.EndHour {
+			return action, true
+		}
+	}
+	return ScheduleAction{}, false
 }

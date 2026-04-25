@@ -4,24 +4,25 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
-
-	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
 type ScheduleActionDTO struct {
-	Activity string `json:"activity"`
-	Location string `json:"location"`
-	Period   string `json:"period"`
+	Activity  string `json:"activity"`
+	Location  string `json:"location"`
+	StartHour int    `json:"startHour"`
+	EndHour   int    `json:"endHour"`
 }
 
 type TemplateDTO struct {
-	Backstory   string              `json:"backstory"`
-	CurrentZone string              `json:"currentZone"`
-	Description string              `json:"description"`
-	Id          string              `json:"id"`
-	Name        string              `json:"name"`
-	Role        string              `json:"role"`
-	Schedule    []ScheduleActionDTO `json:"schedule"`
+	Backstory      string              `json:"backstory"`
+	CurrentZone    string              `json:"currentZone"`
+	Description    string              `json:"description"`
+	Id             string              `json:"id"`
+	Name           string              `json:"name"`
+	Role           string              `json:"role"`
+	Schedule       []ScheduleActionDTO `json:"schedule"`
+	HomeLocation   string              `json:"homeLocation"`
+	EatingLocation string              `json:"eatingLocation"`
 }
 
 type Data struct {
@@ -64,13 +65,16 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 				schedule := make([]ScheduleAction, len(npcData.Schedule))
 				for i, action := range npcData.Schedule {
 					schedule[i] = ScheduleAction{
-						Activity: Activity(action.Activity),
-						Location: action.Location,
-						Period:   world.PeriodOfDay(action.Period),
+						Activity:  Activity(action.Activity),
+						Location:  action.Location,
+						StartHour: action.StartHour,
+						EndHour:   action.EndHour,
 					}
 				}
 				return schedule
 			}(),
+			npcData.HomeLocation,
+			npcData.EatingLocation,
 		)
 		npcs = append(npcs, npc)
 	}

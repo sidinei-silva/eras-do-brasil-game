@@ -2,16 +2,17 @@ package npc
 
 import "github.com/sidinei-silva/eras-do-brasil-game/server/world"
 
-// Get the NPC's current activity and location based on the game time, the NPC's schedule and need levels
+// Obtém a atividade e a localização atuais do NPC com base no horário do jogo, na agenda do NPC e nos níveis de necessidade
 // TODO: Colocar nos npcs os locais favoritos baseado nos dados do npc e usar isso para escolher a localização quando a atividade for "walking" ou "idle"
 func (npc *Npc) CurrentActivityAndLocation(gameTime world.GameTime) {
-	const (
+
+	// Isso será trocado por uma logica de scoring das necessidades do npc baseado em peso
+	/*const (
 		hungerCritical = 80.0
 		energyLow      = 20.0
 	)
 
-	// Need-based overrides have priority over schedule.
-	if npc.Needs.Hunger >= hungerCritical {
+	 if npc.Needs.Hunger >= hungerCritical {
 		action := npc.getScheduleActionEating()
 		npc.CurrentActivity = action.Activity
 		npc.CurrentZone = action.Location
@@ -23,46 +24,15 @@ func (npc *Npc) CurrentActivityAndLocation(gameTime world.GameTime) {
 		npc.CurrentActivity = action.Activity
 		npc.CurrentZone = action.Location
 		return
-	}
+	} */
 
-	for _, action := range npc.Schedule {
-		if action.Period == gameTime.PeriodOfDay {
-			location := action.Location
-			if location == "" {
-				location = npc.CurrentZone
-			}
+	actionActive, found := npc.ActiveScheduleAt(gameTime.Time.Hour())
 
-			npc.CurrentActivity = action.Activity
-			npc.CurrentZone = location
-			return
-		}
+	if found {
+		npc.CurrentActivity = actionActive.Activity
+		npc.CurrentZone = actionActive.Location
+		return
 	}
 
 	npc.CurrentActivity = ActivityIdle
-}
-
-func (npc *Npc) getScheduleActionEating() ScheduleAction {
-	for _, action := range npc.Schedule {
-		if action.Activity == ActivityEating {
-			return action
-		}
-	}
-
-	return ScheduleAction{
-		Activity: ActivityIdle,
-		Location: npc.CurrentZone,
-	}
-}
-
-func (npc *Npc) getScheduleActionSleeping() ScheduleAction {
-	for _, action := range npc.Schedule {
-		if action.Activity == ActivitySleeping {
-			return action
-		}
-	}
-
-	return ScheduleAction{
-		Activity: ActivityIdle,
-		Location: npc.CurrentZone,
-	}
 }

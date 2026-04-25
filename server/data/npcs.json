@@ -4,29 +4,23 @@
             "backstory": "Tomas é um ferreiro habilidoso que aprendeu o ofício com seu pai. Ele é conhecido por criar armas e armaduras de alta qualidade para os aventureiros que visitam a vila. Tomas é um homem trabalhador e dedicado, sempre disposto a ajudar os outros com suas habilidades de forja.",
             "currentZone": "mata_costeira-vila_de_sao_tome",
             "description": "Tomas é um ferreiro robusto e de meia-idade, com cabelos grisalhos e uma barba bem cuidada. Ele é conhecido por sua habilidade em forjar armas e armaduras de alta qualidade, e é um membro respeitado da comunidade local. Tomas é amigável e sempre disposto a compartilhar histórias sobre suas aventuras passadas e os desafios que enfrentou como ferreiro.",
+            "eatingLocation": "taverna da vila",
+            "homeLocation": "casa do ferreiro",
             "id": "npc_ferreiro_tomas",
             "name": "Tomas, o Ferreiro",
             "role": "merchant",
             "schedule": [
                 {
                     "activity": "working",
+                    "endHour": 12,
                     "location": "oficina do ferreiro",
-                    "period": "manhã"
+                    "startHour": 8
                 },
                 {
                     "activity": "working",
+                    "endHour": 17,
                     "location": "mercado central",
-                    "period": "tarde"
-                },
-                {
-                    "activity": "eating",
-                    "location": "residência de Tomas",
-                    "period": "noite"
-                },
-                {
-                    "activity": "sleeping",
-                    "location": "residência de Tomas",
-                    "period": "madrugada"
+                    "startHour": 13
                 }
             ]
         },
@@ -34,29 +28,23 @@
             "backstory": "Ricardo é um guarda experiente que protege a vila de ameaças externas. Ele é conhecido por sua lealdade e determinação, sempre pronto para defender os habitantes da vila.",
             "currentZone": "mata_costeira-vila_de_sao_tome",
             "description": "Ricardo é um homem forte e vigilante, com uma aparência imponente e uma postura que transmite autoridade. Ele é respeitado por todos na vila por seu serviço dedicado à segurança.",
+            "eatingLocation": "refeitorio da guarda",
+            "homeLocation": "quartel da guarda",
             "id": "npc_guarda_ricardo",
             "name": "Ricardo, o Guarda",
             "role": "guard",
             "schedule": [
                 {
                     "activity": "working",
+                    "endHour": 12,
                     "location": "portão da vila",
-                    "period": "manhã"
+                    "startHour": 6
                 },
                 {
                     "activity": "working",
+                    "endHour": 18,
                     "location": "portão da vila",
-                    "period": "tarde"
-                },
-                {
-                    "activity": "eating",
-                    "location": "taberna da vila",
-                    "period": "noite"
-                },
-                {
-                    "activity": "sleeping",
-                    "location": "residência de Ricardo",
-                    "period": "madrugada"
+                    "startHour": 12
                 }
             ]
         },
@@ -64,29 +52,23 @@
             "backstory": "Naila é uma curandeira talentosa que utiliza ervas e poções para tratar os ferimentos dos habitantes da vila. Ela é conhecida por sua compaixão e dedicação em ajudar os outros.",
             "currentZone": "mata_costeira-vila_de_sao_tome",
             "description": "Naila é uma mulher gentil e experiente, com olhos compassivos e uma presença tranquilizadora. Ela é conhecida por sua habilidade em preparar poções e ervas que curam ferimentos e aliviam dores.",
+            "eatingLocation": "cabana da curandeira",
+            "homeLocation": "cabana da curandeira",
             "id": "npc_naila_curandeira",
             "name": "Naila, a Curandeira",
             "role": "merchant",
             "schedule": [
                 {
                     "activity": "working",
+                    "endHour": 12,
                     "location": "cabana da curandeira",
-                    "period": "manhã"
+                    "startHour": 7
                 },
                 {
                     "activity": "working",
+                    "endHour": 16,
                     "location": "mercado central",
-                    "period": "tarde"
-                },
-                {
-                    "activity": "eating",
-                    "location": "taberna da vila",
-                    "period": "noite"
-                },
-                {
-                    "activity": "sleeping",
-                    "location": "residência de Naila",
-                    "period": "madrugada"
+                    "startHour": 13
                 }
             ]
         }

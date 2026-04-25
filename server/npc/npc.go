@@ -10,24 +10,26 @@ const (
 )
 
 type Npc struct {
-	Id              string           // Unique identifier for the NPC
-	Name            string           // Name of the NPC
-	Role            Role             // Role or profession of the NPC (e.g., merchant, quest giver, guard)
-	CurrentZone     string           // Current zone where the NPC is located
-	CurrentActivity Activity         // Current activity the NPC is engaged in
-	Description     string           // Description of the NPC's appearance and personality
-	Backstory       string           // Background story of the NPC
-	Schedule        []ScheduleAction // Daily schedule of the NPC's activities
-	Needs           Need             // Current needs of the NPC
+	Id              string           // Identificador único do NPC
+	Name            string           // Nome do NPC
+	Role            Role             // Função ou profissão do NPC (ex.: comerciante, entregador de missão, guarda)
+	CurrentZone     string           // Zona atual onde o NPC está localizado
+	CurrentActivity Activity         // Atividade atual em que o NPC está envolvido
+	Description     string           // Descrição da aparência e personalidade do NPC
+	Backstory       string           // História de fundo do NPC
+	Schedule        []ScheduleAction // Agenda diária das atividades do NPC
+	Needs           Need             // Necessidades atuais do NPC
+	HomeLocation    string           // Local onde o NPC mora para dormir
+	EatingLocation  string           // Local onde o NPC come
 }
 
-func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction) *Npc {
+func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction, homeLocation string, eatingLocation string) *Npc {
 	return &Npc{
 		Id:              id,
 		Name:            name,
 		Role:            role,
 		CurrentZone:     currentZone,
-		CurrentActivity: "idle", // Default activity is idle until the schedule is evaluated
+		CurrentActivity: "idle", // A atividade padrão é idle até que a agenda seja avaliada
 		Description:     description,
 		Backstory:       backstory,
 		Schedule:        schedule,
@@ -35,5 +37,7 @@ func NewNpc(id string, name string, role Role, currentZone string, description s
 			Hunger: 0,
 			Energy: 100,
 		},
+		HomeLocation:   homeLocation,
+		EatingLocation: eatingLocation,
 	}
 }
