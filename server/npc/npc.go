@@ -34,8 +34,9 @@ func NewNpc(id string, name string, role Role, currentZone string, description s
 		Backstory:       backstory,
 		Schedule:        schedule,
 		Needs: Need{
-			Hunger: 0,
-			Energy: 100,
+			Hunger:     0,
+			Fatigue:    0,
+			Loneliness: 0,
 		},
 		HomeLocation:   homeLocation,
 		EatingLocation: eatingLocation,
