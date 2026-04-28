@@ -49,3 +49,7 @@ func (m *Manager) GetAllBlocks() []*Block {
 	}
 	return blocks
 }
+
+func (m *Manager) TickDuration() time.Duration {
+	return m.tickDuration
+}
