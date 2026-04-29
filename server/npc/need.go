@@ -3,7 +3,7 @@ package npc
 // Taxa por hora de jogo
 const (
 	BaseHungerRate     = 12.5 // 100% em 8h de Idle
-	BaseFatigueRate    = 6.0  // 100% em ~16h de Idle
+	BaseFatigueRate    = 4.0  // 100% em ~25h de Idle
 	BaseLonelinessRate = 4.0  // 100% em 25h de Idle
 )
 
@@ -13,12 +13,12 @@ type Need struct {
 	Loneliness float64 // Nível de solidão (0 a 100)
 }
 
-func ApplyDecay(npc *Npc, tickHours float64) {
+func (npc *Npc) ApplyDecay(tickHours float64) {
 	intensity := getActivityIntensity(npc.CurrentActivity)
 
 	npc.Needs.Hunger += BaseHungerRate * intensity * tickHours
 	npc.Needs.Fatigue += BaseFatigueRate * intensity * tickHours
-	npc.Needs.Loneliness += BaseLonelinessRate * intensity * tickHours
+	npc.Needs.Loneliness += BaseLonelinessRate * tickHours
 }
 
 func (npc *Npc) ApplyActivityEffects() {

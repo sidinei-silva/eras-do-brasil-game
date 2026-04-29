@@ -84,7 +84,7 @@ func main() {
 		worldManager.ProcessTick()
 
 		// Passo 3: Atualiza os NPCs
-		npcManager.ProcessTick(worldManager.GameTime())
+		npcManager.ProcessTick(worldManager.GameTime(), worldManager.TickDuration())
 
 		// Passo 4: Modo Deus - Tira a foto e manda para o Admin Hub
 		snapshot := snapshot.Build(gameLoop.TickCount(), worldManager, npcManager)

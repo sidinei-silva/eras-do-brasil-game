@@ -1,6 +1,8 @@
 package npc
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	ActivityEating      Activity = "eating"
