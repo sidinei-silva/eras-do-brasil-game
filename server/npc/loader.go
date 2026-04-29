@@ -33,7 +33,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 	filePath := os.Getenv("NPCS_FILE")
 
 	if filePath == "" {
-		// fallback para quando o servidor é iniciado em server/cmd/game
+		// Caminho padrão quando a variável NPCS_FILE não estiver definida.
 		filePath = "./data/npcs.json"
 	}
 

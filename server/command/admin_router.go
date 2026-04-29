@@ -5,16 +5,15 @@ import (
 	"log/slog"
 )
 
-// Defini uma interface para que o Router possa enviar mensagens de volta
-// sem criar dependência circular com o Hub.
+// Interface para o Router enviar respostas sem criar dependência circular com o Hub.
 type AdminNotifier interface {
-	Send(category, eventType string, data any) // O seu método h.send do hub.go
+	Send(category, eventType string, data any) // Método implementado pelo Hub Admin
 }
 
 type AdminRouter struct {
 	gameQueue *CommandQueue
 	notifier  AdminNotifier
-	// worldManager *world.Manager // Injetar aqui se precisar ler dados do mundo instantaneamente
+	// worldManager *world.Manager // Injetar quando precisar de consultas imediatas no mundo
 }
 
 // NewAdminRouter cria o roteador e injeta a fila do motor do jogo
@@ -22,9 +21,9 @@ func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier) *AdminRoute
 	return &AdminRouter{gameQueue: gameQueue, notifier: notifier}
 }
 
-// Route é chamado pelo readPump do cliente Admin
+// Route é chamado pelo readPump da sessão admin
 func (r *AdminRouter) Route(cmd PlayerCommand) {
-	// O cmd.Message.Type diz-nos qual foi a ação pedida pelo Admin
+	// cmd.Message.Type define a ação solicitada pelo admin.
 	switch cmd.Message.Type {
 
 	// ==========================================
@@ -36,7 +35,7 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		slog.Info("Comando de Modo Deus enfileirado", "type", cmd.Message.Type)
 
 	// ==========================================
-	// 2. COMANDOS DE CONSULTA / OOB (Lêem o mundo instantaneamente)
+	// 2. COMANDOS DE CONSULTA / OOB (leem o mundo instantaneamente)
 	// Substitui o antigo comando: /npc <id>
 	// ==========================================
 	case "admin_get_npc":
@@ -49,7 +48,7 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 			return
 		}
 
-		// Faz busca no WorldManager
+		// Busca no WorldManager
 		// state, ok := r.worldManager.GetNPCState(payload.ID)
 		// if !ok {
 		// 	r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})

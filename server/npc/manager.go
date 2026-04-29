@@ -12,7 +12,7 @@ type Manager struct {
 }
 
 func NewManager() (*Manager, error) {
-	// Load NPCs
+	// Carrega NPCs
 	npcs, err := LoadNpcsFromFile()
 
 	if err != nil {
@@ -24,7 +24,7 @@ func NewManager() (*Manager, error) {
 }
 
 // ProcessTick é o coração do comportamento dos NPCs. É chamado pelo
-// game loop a cada tick. Para cada NPC, executa o ciclo:
+// loop principal a cada tick. Para cada NPC, executa o ciclo:
 //  1. Aplica decay contínuo (fome, fadiga, solidão sobem)
 //  2. Verifica se atividade discreta atual terminou; se sim, aplica
 //     efeito e decide próxima atividade

@@ -27,7 +27,7 @@ type PlayerCommand struct {
 }
 
 // ==========================================
-// PAYLOADS ESPECÍFICOS (Crie um para cada ação)
+// PAYLOADS ESPECÍFICOS (um por ação)
 // ==========================================
 
 // Payload exclusivo para o Chat
@@ -46,11 +46,11 @@ type MovePayload struct {
 func ProcessPlayerCommands(tickCount int64, cmds []PlayerCommand) {
 	for _, cmd := range cmds {
 
-		// Aqui fica o seu switch com as lógicas do JSON cru
+		// Switch central para processar o JSON cru recebido da fila.
 		switch cmd.Message.Type {
 
 		case "send_chat":
-			// Você tem a ID do jogador e o Payload.
+			// Aqui temos a ID do jogador e o payload já recebido no comando.
 			var payload struct {
 				Message string `json:"message"`
 			}

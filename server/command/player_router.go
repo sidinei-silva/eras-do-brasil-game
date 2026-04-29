@@ -7,7 +7,7 @@ import (
 
 type PlayerRouter struct {
 	gameQueue *CommandQueue
-	// chatService *chat.Service // Quando você criar o serviço de chat, ele entra aqui
+	// chatService *chat.Service // Injetar quando o serviço de chat existir.
 }
 
 func NewPlayerRouter(gameQueue *CommandQueue) *PlayerRouter {
@@ -20,7 +20,7 @@ func NewPlayerRouter(gameQueue *CommandQueue) *PlayerRouter {
 func (r *PlayerRouter) Route(cmd PlayerCommand) {
 	switch cmd.Message.Type {
 	// ==========================================
-	// 1. OOB COMMANDS (Assíncronos, fora do GameLoop)
+	// 1. COMANDOS OOB (assíncronos, fora do GameLoop)
 	// ==========================================
 
 	case TypeSendChat:
@@ -32,12 +32,11 @@ func (r *PlayerRouter) Route(cmd PlayerCommand) {
 		}
 
 	// ==========================================
-	// 2. SIMULATION COMMANDS (Vão para a Fila do GameLoop)
+	// 2. COMANDOS DE SIMULAÇÃO (vão para a fila do GameLoop)
 	// ==========================================
 
 	case TypeMove, TypeAttack:
-		// Aqui não fazemos o parse do payload. Jogamos a casca inteira para a fila do GameLoop e ele que decide o que fazer.
-		// Isso é importante para manter a lógica de jogo centralizada e evitar duplicação de código.
+		// Não faz parse aqui: a decisão fica centralizada no fluxo síncrono do GameLoop.
 		r.gameQueue.Enqueue(cmd)
 		slog.Info("Comando de simulação enfileirado", "type", cmd.Message.Type)
 	default:

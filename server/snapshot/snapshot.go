@@ -7,8 +7,8 @@ import (
 
 // Snapshot é uma cópia imutável do estado agregado do mundo num tick
 // específico. Produzido por Build() e consumido por:
-//   - admin hub (serializa e envia ao cliente admin)
-//   - persist (futuro, Fase 1+)
+//   - hub admin (serializa e envia ao cliente admin)
+//   - persistência (futuro, Fase 1+)
 //
 // Campos devem ser cópias por valor — nunca ponteiros pros structs
 // internos dos managers. Isso garante que o leitor não consegue mutar
@@ -40,7 +40,7 @@ func Build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
 	}
 
 	// Cópia por valor (não ponteiro) para garantir imutabilidade
-	// do snapshot após Build retornar.
+	// do Snapshot após Build retornar.
 	for _, v := range npcMgr.GetAllNpcs() {
 		snap.NPCs = append(snap.NPCs, *v)
 	}

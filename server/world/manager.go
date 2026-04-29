@@ -13,7 +13,7 @@ type Manager struct {
 
 func NewManager(tickDuration time.Duration) (*Manager, error) {
 
-	//Load blocks
+	// Carrega blocos
 	blocks, err := LoadBlocksFromFile()
 	gameTime := NewGameTime()
 

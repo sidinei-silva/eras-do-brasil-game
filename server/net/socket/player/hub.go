@@ -104,7 +104,7 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 		wg.Add(2)
 		defer wg.Done()
 
-		//Vale a pena usar o NewClient aqui ou já crio o objeto direto?
+		// Instancia a sessão do jogador com queue e router já injetados.
 		client := NewPlayerSession(h, conn, h.cmdQueue, h.router)
 
 		select {
@@ -116,7 +116,7 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 		}
 
 		go client.writePump(ctx)
-		// Se esta linha for uma goroutine (go client...), o socket morre na mesma hora.
+		// readPump roda na goroutine atual para manter o ciclo de vida da conexão.
 		client.readPump(ctx, wg)
 	})
 }

@@ -33,8 +33,8 @@ type Hub struct {
 	clients      map[*AdminSession]bool
 	register     chan *AdminSession
 	unregister   chan *AdminSession
-	events       chan []byte             // Fila A: Para mensagens de texto/erros já em JSON
-	SnapshotChan chan *snapshot.Snapshot // Fila B: Exclusiva para o motor do jogo
+	events       chan []byte             // Fila A: mensagens já serializadas (texto/erros)
+	SnapshotChan chan *snapshot.Snapshot // Fila B: snapshots vindos do motor do jogo
 	router       *command.AdminRouter
 }
 
@@ -44,7 +44,7 @@ func NewHub() *Hub {
 		register:     make(chan *AdminSession),
 		unregister:   make(chan *AdminSession),
 		events:       make(chan []byte, 512),
-		SnapshotChan: make(chan *snapshot.Snapshot, 10), // Buffer de 10 ticks (protege o GameLoop)
+		SnapshotChan: make(chan *snapshot.Snapshot, 10), // Buffer de 10 ticks para não bloquear o GameLoop
 	}
 }
 
@@ -84,7 +84,7 @@ func (h *Hub) Publish(snap *snapshot.Snapshot) {
 	select {
 	case h.SnapshotChan <- snap:
 	default:
-		// Se o admin hub travar, a foto é descartada, mas o jogo não laga.
+		// Se o admin hub atrasar, o snapshot é descartado para preservar o ritmo do jogo.
 	}
 }
 
@@ -178,16 +178,16 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 		// ==========================================
 		welcomeEvent := newEvent("system", "welcome", map[string]any{
 			"message": "Admin console connected. Aguardando a sincronização do próximo tick...",
-			// Não pedimos o Snapshot aqui! O GameLoop vai enviar automaticamente no SnapshotChan.
+			// Não solicita snapshot aqui: o GameLoop publica automaticamente no SnapshotChan.
 		})
 
 		if payload, err := json.Marshal(welcomeEvent); err == nil {
-			// Colocamos o JSON direto no canal de envio DESTE cliente, ignorando os outros
+			// Envia direto para este cliente, sem broadcast para os demais.
 			client.send <- payload
 		}
 
 		go client.writePump(ctx)
-		// Se esta linha for uma goroutine (go client...), o socket morre na mesma hora.
+		// readPump roda na goroutine atual para manter o ciclo de vida da conexão.
 		client.readPump(ctx, wg)
 
 	})

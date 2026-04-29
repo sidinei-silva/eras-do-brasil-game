@@ -37,7 +37,7 @@ func LoadBlocksFromFile() ([]*Block, error) {
 	filePath := os.Getenv("BLOCKS_FILE")
 
 	if filePath == "" {
-		// fallback para quando o servidor é iniciado em server/cmd/game
+		// Caminho padrão quando a variável BLOCKS_FILE não estiver definida.
 		filePath = "./data/blocks.json"
 	}
 

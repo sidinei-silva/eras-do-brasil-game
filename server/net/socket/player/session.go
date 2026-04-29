@@ -87,11 +87,11 @@ func (c *PlayerSession) readPump(ctx context.Context, wg *sync.WaitGroup) {
 
 			// 2. Monta o comando com a ID do jogador
 			cmd := command.PlayerCommand{
-				PlayerID: c.id, // A ID que você gerou para este client
+				PlayerID: c.id, // ID da sessão que originou a mensagem
 				Message:  clientMsg,
 			}
 
-			// 3. Delega para o CommandRouter decidir o que fazer
+			// 3. Delega para o router decidir o próximo passo
 			c.router.Route(cmd)
 		}
 	}

@@ -20,7 +20,7 @@ type AdminSession struct {
 	conn   *websocket.Conn
 	send   chan []byte
 	id     string
-	router *command.AdminRouter // O Roteador de Comandos do Admin
+	router *command.AdminRouter // Roteador de comandos do admin
 }
 
 func NewAdminSession(hub *Hub, conn *websocket.Conn, router *command.AdminRouter, ctx context.Context) *AdminSession {
@@ -70,11 +70,11 @@ func (c *AdminSession) readPump(ctx context.Context, wg *sync.WaitGroup) {
 
 			// 2. Monta o comando com a ID do jogador
 			cmd := command.PlayerCommand{
-				PlayerID: c.id, // A ID que você gerou para este client
+				PlayerID: c.id, // ID desta sessão admin
 				Message:  clientMsg,
 			}
 
-			// 3. Delega para o CommandRouter decidir o que fazer
+			// 3. Delega para o router decidir o próximo passo
 			c.router.Route(cmd)
 		}
 	}

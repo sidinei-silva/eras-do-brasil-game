@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// tickInterval é o tempo real entre cada tick do game loop.
+// tickInterval é o tempo real entre cada tick do loop principal.
 // Mantido em 1s para garantir responsividade do jogador (comandos processados em até 1s).
 // A velocidade do tempo de jogo é controlada pelo tickDuration no WorldManager, não aqui.
 const tickInterval = 1 * time.Second
@@ -16,7 +16,7 @@ const tickInterval = 1 * time.Second
 type GameLoop struct {
 	// tickCount armazena a quantidade total de ticks já executados no loop.
 	tickCount atomic.Int64
-	// running indica se o game loop está em execução no momento.
+	// running indica se o loop principal está em execução no momento.
 	running atomic.Bool
 	// cancel guarda a função usada para cancelar o contexto interno do loop.
 	cancel context.CancelFunc
