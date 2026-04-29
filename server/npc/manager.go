@@ -26,7 +26,6 @@ func (m *Manager) ProcessTick(gameTime world.GameTime) {
 	// Aqui é onde a lógica de comportamento dos NPCs seria processada a cada tick.
 	// Por exemplo, você poderia iterar sobre os NPCs e atualizar suas necessidades, mudar suas atividades com base no horário do jogo, etc.
 	for _, npc := range m.npcs {
-		npc.UpdateNeeds(gameTime)
 		npc.CurrentActivityAndLocation(gameTime)
 	}
 }

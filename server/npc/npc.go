@@ -1,5 +1,7 @@
 package npc
 
+import "time"
+
 type Role string
 
 const (
@@ -10,17 +12,18 @@ const (
 )
 
 type Npc struct {
-	Id              string           // Identificador único do NPC
-	Name            string           // Nome do NPC
-	Role            Role             // Função ou profissão do NPC (ex.: comerciante, entregador de missão, guarda)
-	CurrentZone     string           // Zona atual onde o NPC está localizado
-	CurrentActivity Activity         // Atividade atual em que o NPC está envolvido
-	Description     string           // Descrição da aparência e personalidade do NPC
-	Backstory       string           // História de fundo do NPC
-	Schedule        []ScheduleAction // Agenda diária das atividades do NPC
-	Needs           Need             // Necessidades atuais do NPC
-	HomeLocation    string           // Local onde o NPC mora para dormir
-	EatingLocation  string           // Local onde o NPC come
+	Id                string           // Identificador único do NPC
+	Name              string           // Nome do NPC
+	Role              Role             // Função ou profissão do NPC (ex.: comerciante, entregador de missão, guarda)
+	CurrentZone       string           // Zona atual onde o NPC está localizado
+	CurrentActivity   Activity         // Atividade atual em que o NPC está envolvido
+	Description       string           // Descrição da aparência e personalidade do NPC
+	Backstory         string           // História de fundo do NPC
+	Schedule          []ScheduleAction // Agenda diária das atividades do NPC
+	Needs             Need             // Necessidades atuais do NPC
+	HomeLocation      string           // Local onde o NPC mora para dormir
+	EatingLocation    string           // Local onde o NPC come
+	ActivityStartedAt time.Time        // Hora em que a atividade atual começou
 }
 
 func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction, homeLocation string, eatingLocation string) *Npc {

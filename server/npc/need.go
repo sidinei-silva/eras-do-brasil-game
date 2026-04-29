@@ -1,11 +1,10 @@
 package npc
 
-import "github.com/sidinei-silva/eras-do-brasil-game/server/world"
-
-// TODO: pesquisar um bom valor para a taxa de decaimento de fome e energia, considerando o avanço do tempo no jogo (ex: 1 ponto de fome a cada 10 minutos de jogo, 1 ponto de energia a cada 30 minutos de jogo, etc)
+// Taxa por hora de jogo
 const (
-	HugerDecayRate   = 1 / 1440.0
-	FatigueDecayRate = 1 / 1440.0
+	BaseHungerRate     = 12.5 // 100% em 8h de Idle
+	BaseFatigueRate    = 6.0  // 100% em ~16h de Idle
+	BaseLonelinessRate = 4.0  // 100% em 25h de Idle
 )
 
 type Need struct {
@@ -14,23 +13,38 @@ type Need struct {
 	Loneliness float64 // Nível de solidão (0 a 100)
 }
 
-// TODO: Melhorar o balanceamento de multiplicador de necessidade baseado na atividade e no tempo do jogo (ex: se for noite, dormir aumenta mais fatigue, comer aumenta mais a fome, etc)
-func (npc *Npc) UpdateNeeds(gameTime world.GameTime) {
+func ApplyDecay(npc *Npc, tickHours float64) {
+	intensity := getActivityIntensity(npc.CurrentActivity)
 
-	switch npc.CurrentActivity {
-	case ActivityWorking:
-		npc.Needs.Hunger += HugerDecayRate
-		npc.Needs.Fatigue += FatigueDecayRate
-	case ActivitySleeping:
-		npc.Needs.Hunger += HugerDecayRate / 2
-		npc.Needs.Fatigue -= FatigueDecayRate * 2
-	case ActivityIdle:
-		npc.Needs.Hunger += HugerDecayRate / 2
-		npc.Needs.Fatigue += FatigueDecayRate / 2
-	case ActivityEating:
-		npc.Needs.Hunger -= HugerDecayRate * 2
-		npc.Needs.Fatigue += FatigueDecayRate
+	npc.Needs.Hunger += BaseHungerRate * intensity * tickHours
+	npc.Needs.Fatigue += BaseFatigueRate * intensity * tickHours
+	npc.Needs.Loneliness += BaseLonelinessRate * intensity * tickHours
+}
 
+func (npc *Npc) ApplyActivityEffects() {
+	effect := getActivityEffects(npc.CurrentActivity)
+	npc.Needs.Hunger += effect.HungerDelta
+	npc.Needs.Fatigue += effect.FatigueDelta
+	npc.Needs.Loneliness += effect.LonelinessDelta
+
+}
+
+func (npc *Npc) ClampNeeds() {
+	if npc.Needs.Hunger < 0 {
+		npc.Needs.Hunger = 0
+	} else if npc.Needs.Hunger > 100 {
+		npc.Needs.Hunger = 100
 	}
 
+	if npc.Needs.Fatigue < 0 {
+		npc.Needs.Fatigue = 0
+	} else if npc.Needs.Fatigue > 100 {
+		npc.Needs.Fatigue = 100
+	}
+
+	if npc.Needs.Loneliness < 0 {
+		npc.Needs.Loneliness = 0
+	} else if npc.Needs.Loneliness > 100 {
+		npc.Needs.Loneliness = 100
+	}
 }

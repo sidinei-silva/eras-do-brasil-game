@@ -2,14 +2,6 @@ package npc
 
 type Activity string
 
-const (
-	ActivityEating   Activity = "eating"
-	ActivityWalking  Activity = "walking"
-	ActivityIdle     Activity = "idle"
-	ActivitySleeping Activity = "sleeping"
-	ActivityWorking  Activity = "working"
-)
-
 type ScheduleAction struct {
 	Activity  Activity // A atividade que o NPC irá realizar
 	Location  string   // O local onde a atividade acontecerá
