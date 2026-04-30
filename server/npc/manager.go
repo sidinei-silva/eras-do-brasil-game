@@ -59,10 +59,6 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 // thresholds de need. Será substituído por scoring com pesos na próxima
 // rodada (1.3 completo).
 func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
-	const (
-		hungerCritical  = 80.0
-		fatigueCritical = 80.0
-	)
 
 	hour := gameTime.Time.Hour()
 	desiredActivity, desiredLocation := m.computeDesiredActivity(npc, hour)
@@ -76,10 +72,6 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 }
 
 func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string) {
-	const (
-		hungerCritical  = 80.0
-		fatigueCritical = 80.0
-	)
 
 	if npc.Needs.Hunger >= hungerCritical {
 		return pickMealForHour(hour), npc.EatingLocation

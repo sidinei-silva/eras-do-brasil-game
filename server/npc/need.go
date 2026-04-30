@@ -7,6 +7,11 @@ const (
 	BaseLonelinessRate = 4.0  // 100% em 25h de Idle
 )
 
+const (
+	hungerCritical  = 80.0
+	fatigueCritical = 80.0
+)
+
 type Need struct {
 	Hunger     float64 // Nível de fome (0 a 100)
 	Fatigue    float64 // Nível de fadiga (0 a 100)
