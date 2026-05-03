@@ -34,7 +34,7 @@
             "backstory": "Ricardo é um guarda experiente que protege a vila de ameaças externas. Ele é conhecido por sua lealdade e determinação, sempre pronto para defender os habitantes da vila.",
             "currentZone": "mata_costeira-vila_de_sao_tome",
             "description": "Ricardo é um homem forte e vigilante, com uma aparência imponente e uma postura que transmite autoridade. Ele é respeitado por todos na vila por seu serviço dedicado à segurança.",
-            "eatingLocation": "refeitorio da guarda",
+            "eatingLocation": "taverna da vila",
             "homeLocation": "quartel da guarda",
             "id": "npc_guarda_ricardo",
             "name": "Ricardo, o Guarda",
@@ -64,7 +64,7 @@
             "backstory": "Naila é uma curandeira talentosa que utiliza ervas e poções para tratar os ferimentos dos habitantes da vila. Ela é conhecida por sua compaixão e dedicação em ajudar os outros.",
             "currentZone": "mata_costeira-vila_de_sao_tome",
             "description": "Naila é uma mulher gentil e experiente, com olhos compassivos e uma presença tranquilizadora. Ela é conhecida por sua habilidade em preparar poções e ervas que curam ferimentos e aliviam dores.",
-            "eatingLocation": "cabana da curandeira",
+            "eatingLocation": "taverna da vila",
             "homeLocation": "cabana da curandeira",
             "id": "npc_naila_curandeira",
             "name": "Naila, a Curandeira",
@@ -83,7 +83,7 @@
                     "startHour": 13
                 }
             ],
-            "needs_weight": {
+            "needsWeight": {
                 "hunger": 0.20,
                 "loneliness": 0.30,
                 "fatigue": 0.20,

@@ -13,12 +13,17 @@ type Need struct {
 	Loneliness float64 // Nível de solidão (0 a 100)
 }
 
-func (npc *Npc) ApplyDecay(tickHours float64) {
+func (npc *Npc) ApplyDecay(tickHours float64, hasCompany bool) {
 	intensity := getActivityIntensity(npc.CurrentActivity)
 
 	npc.Needs.Hunger += BaseHungerRate * intensity * tickHours
 	npc.Needs.Fatigue += BaseFatigueRate * intensity * tickHours
-	npc.Needs.Loneliness += BaseLonelinessRate * tickHours
+
+	if !hasCompany {
+		npc.Needs.Loneliness += BaseLonelinessRate * intensity * tickHours
+	} else {
+		npc.Needs.Loneliness -= BaseLonelinessRate * intensity * tickHours
+	}
 }
 
 func (npc *Npc) ApplyActivityEffects() {

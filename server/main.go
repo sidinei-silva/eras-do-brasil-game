@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lmittmann/tint"
+	charmlog "github.com/charmbracelet/log"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/command"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/net/api"
@@ -24,16 +24,13 @@ import (
 
 func main() {
 
-	// Configura as opções do handler (nível de log, formato de hora, etc)
-	opts := &tint.Options{
-		Level:      slog.LevelDebug,
-		TimeFormat: time.TimeOnly,
-	}
-
-	// Cria o handler customizado com cores e o define como padrão
-	handler := tint.NewHandler(os.Stderr, opts)
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
+	charmLogger := charmlog.NewWithOptions(os.Stderr, charmlog.Options{
+		Level:           charmlog.DebugLevel,
+		TimeFormat:      time.TimeOnly,
+		ReportCaller:    false,
+		ReportTimestamp: true,
+	})
+	slog.SetDefault(slog.New(charmLogger))
 
 	// Cria um contexto que escuta os sinais SIGINT (Ctrl+C) e SIGTERM
 	// 1. Escuta o sinal de parada do Sistema Operacional

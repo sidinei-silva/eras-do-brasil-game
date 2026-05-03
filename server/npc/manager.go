@@ -12,12 +12,14 @@ type Manager struct {
 }
 
 func NewManager() (*Manager, error) {
-	// Carrega NPCs
 	npcs, err := LoadNpcsFromFile()
-
 	if err != nil {
 		slog.Error("Erro ao carregar NPCs", "err", err)
 		return nil, err
+	}
+
+	for _, npc := range npcs {
+		slog.Debug("🆕🆕 ["+npc.Id+"] schedule loaded", "npc", npc.Name, "role", npc.Role, "blocks", len(npc.Schedule))
 	}
 
 	return &Manager{npcs: npcs}, nil
@@ -35,12 +37,44 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 
 	for _, npc := range m.npcs {
 		// Passo 1: decay sempre roda
-		npc.ApplyDecay(tickHours)
+		npcsInZone := m.getNpcsInZone(npc.CurrentZone, npc.Id)
+		hasCompany := len(npcsInZone) > 0
+
+		slog.Debug("ℹ️ ℹ️ ["+npc.Id+"] needs before decay",
+			"id", npc.Id,
+			"npc", npc.Name,
+			"activity", npc.CurrentActivity,
+			"has_company", hasCompany,
+			"zone", npc.CurrentZone,
+			"hunger", int(npc.Needs.Hunger),
+			"fatigue", int(npc.Needs.Fatigue),
+			"loneliness", int(npc.Needs.Loneliness),
+			"score_hunger", npc.CalculateScores(gameTime.Time.Hour())["Hunger"],
+			"score_fatigue", npc.CalculateScores(gameTime.Time.Hour())["Fatigue"],
+			"score_schedule", npc.CalculateScores(gameTime.Time.Hour())["Schedule"],
+			"npcs_in_zone_id", func() []string {
+				ids := make([]string, 0, len(npcsInZone))
+				for _, n := range npcsInZone {
+					ids = append(ids, n.Id)
+				}
+				return ids
+			}(),
+		)
+
+		npc.ApplyDecay(tickHours, hasCompany)
 
 		// Passo 2 e 3: lógica de transição de atividade
 		if npc.IsDiscreteActivity() {
 			if npc.IsActivityComplete(gameTime) {
 				npc.ApplyActivityEffects()
+				slog.Info("✅✅ ["+npc.Id+"] activity done",
+					"id", npc.Id,
+					"npc", npc.Name,
+					"activity", npc.CurrentActivity,
+					"hunger", int(npc.Needs.Hunger),
+					"fatigue", int(npc.Needs.Fatigue),
+					"loneliness", int(npc.Needs.Loneliness),
+				)
 				m.decideNextActivity(npc, gameTime)
 			}
 			// Se não terminou, segue na atividade
@@ -51,6 +85,16 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 
 		// Passo 4: invariantes
 		npc.ClampNeeds()
+
+		slog.Debug("ℹ️ ℹ️ ["+npc.Id+"] needs updated",
+			"id", npc.Id,
+			"npc", npc.Name,
+			"activity", npc.CurrentActivity,
+			"zone", npc.CurrentZone,
+			"hunger", int(npc.Needs.Hunger),
+			"fatigue", int(npc.Needs.Fatigue),
+			"loneliness", int(npc.Needs.Loneliness),
+		)
 	}
 }
 
@@ -63,8 +107,7 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 	hour := gameTime.Time.Hour()
 	previousActivity := npc.CurrentActivity
 	previousLocation := npc.CurrentZone
-	previousNeeds := npc.Needs
-	desiredActivity, desiredLocation := m.computeDesiredActivity(npc, hour)
+	desiredActivity, desiredLocation, winner, winnerScore := m.computeDesiredActivity(npc, hour)
 
 	if desiredActivity == npc.CurrentActivity && desiredLocation == npc.CurrentZone {
 		return
@@ -72,33 +115,27 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	npc.TransitionTo(desiredActivity, desiredLocation, gameTime)
 
-	slog.Info("npc transitioned",
-		"npcId", npc.Id,
+	slog.Info("🚶‍♂️‍➡️🚶‍♂️‍➡️ ["+npc.Id+"] transitioned",
+		"id", npc.Id,
+		"npc", npc.Name,
 		"hour", hour,
-		"previous", map[string]any{
-			"activity": previousActivity,
-			"location": previousLocation,
-			"needs":    previousNeeds,
-		},
-		"to", map[string]any{
-			"activity": desiredActivity,
-			"location": desiredLocation,
-			"needs":    npc.Needs,
-		},
-		"scores", npc.CalculateScores(hour),
-		"schedules", npc.Schedule,
+		"from", previousActivity,
+		"to", desiredActivity,
+		"from_zone", previousLocation,
+		"to_zone", desiredLocation,
+		"winner", winner,
+		"score", int(winnerScore),
 	)
-
 }
 
-func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string) {
+func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string, string, float64) {
 	scores := npc.CalculateScores(hour)
 	activity, location := ActivityIdle, npc.CurrentZone
 	winner, maxScore := npc.PickWinnerScore(scores, npc.CurrentActivity)
 	const minActionableScore = 10.0
 
 	if maxScore < minActionableScore {
-		return ActivityIdle, npc.CurrentZone
+		return ActivityIdle, npc.CurrentZone, "none", maxScore
 	}
 
 	switch winner {
@@ -111,7 +148,7 @@ func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string) 
 		activity, location = action.Activity, action.Location
 	}
 
-	return activity, location
+	return activity, location, winner, maxScore
 }
 
 func (m *Manager) GetAllNpcs() []*Npc {
@@ -130,4 +167,14 @@ func (m *Manager) GetNpcById(id string) (*Npc, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (m *Manager) getNpcsInZone(zone string, npcId string) []*Npc {
+	npcs := make([]*Npc, 0)
+	for _, npc := range m.npcs {
+		if npc.CurrentZone == zone && npc.Id != npcId {
+			npcs = append(npcs, npc)
+		}
+	}
+	return npcs
 }
