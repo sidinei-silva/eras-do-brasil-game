@@ -4,11 +4,11 @@ package npc
 // Função utilitária do pacote, não pertence a Manager nem a NPC.
 func pickMealForHour(hour int) Activity {
 	switch {
-	case hour >= 6 && hour < 10:
+	case hour >= 6 && hour < 11:
 		return ActivityBreakfast
-	case hour >= 11 && hour < 14:
+	case hour >= 11 && hour < 15:
 		return ActivityLunch
-	case hour >= 18 && hour < 21:
+	case hour >= 17 && hour < 22:
 		return ActivityDinner
 	default:
 		return ActivitySnack

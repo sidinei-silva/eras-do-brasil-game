@@ -11,7 +11,7 @@
             "cwd": "${workspaceFolder}/server",
             "mode": "auto",
             "name": "Rodar Servidor MMORPG",
-            "program": "${workspaceFolder}/server/cmd/game",
+            "program": "${workspaceFolder}/server/",
             "request": "launch",
             "type": "go"
         }

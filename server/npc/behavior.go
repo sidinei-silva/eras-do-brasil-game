@@ -1,8 +1,6 @@
 package npc
 
 import (
-	"log/slog"
-
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
@@ -29,17 +27,8 @@ func (npc *Npc) TransitionTo(activity Activity, location string, gameTime world.
 		return
 	}
 
-	previous := npc.CurrentActivity
 	npc.CurrentActivity = activity
 	npc.CurrentZone = location
 	npc.ActivityStartedAt = gameTime.Time
 
-	slog.Info("npc transitioned",
-		"npc", npc.Id,
-		"from", previous,
-		"to", activity,
-		"location", location,
-		"hunger", npc.Needs.Hunger,
-		"fatigue", npc.Needs.Fatigue,
-	)
 }

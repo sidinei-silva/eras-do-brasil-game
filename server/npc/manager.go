@@ -61,6 +61,9 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	hour := gameTime.Time.Hour()
+	previousActivity := npc.CurrentActivity
+	previousLocation := npc.CurrentZone
+	previousNeeds := npc.Needs
 	desiredActivity, desiredLocation := m.computeDesiredActivity(npc, hour)
 
 	if desiredActivity == npc.CurrentActivity && desiredLocation == npc.CurrentZone {
@@ -69,20 +72,46 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	npc.TransitionTo(desiredActivity, desiredLocation, gameTime)
 
+	slog.Info("npc transitioned",
+		"npcId", npc.Id,
+		"hour", hour,
+		"previous", map[string]any{
+			"activity": previousActivity,
+			"location": previousLocation,
+			"needs":    previousNeeds,
+		},
+		"to", map[string]any{
+			"activity": desiredActivity,
+			"location": desiredLocation,
+			"needs":    npc.Needs,
+		},
+		"scores", npc.CalculateScores(hour),
+		"schedules", npc.Schedule,
+	)
+
 }
 
 func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string) {
+	scores := npc.CalculateScores(hour)
+	activity, location := ActivityIdle, npc.CurrentZone
+	winner, maxScore := npc.PickWinnerScore(scores, npc.CurrentActivity)
+	const minActionableScore = 10.0
 
-	if npc.Needs.Hunger >= hungerCritical {
-		return pickMealForHour(hour), npc.EatingLocation
+	if maxScore < minActionableScore {
+		return ActivityIdle, npc.CurrentZone
 	}
-	if npc.Needs.Fatigue >= fatigueCritical {
-		return ActivitySleeping, npc.HomeLocation
+
+	switch winner {
+	case "Hunger":
+		activity, location = pickMealForHour(hour), npc.EatingLocation
+	case "Fatigue":
+		activity, location = ActivitySleeping, npc.HomeLocation
+	case "Schedule":
+		action, _ := npc.ActiveScheduleAt(hour)
+		activity, location = action.Activity, action.Location
 	}
-	if action, found := npc.ActiveScheduleAt(hour); found {
-		return action.Activity, action.Location
-	}
-	return ActivityIdle, npc.CurrentZone
+
+	return activity, location
 }
 
 func (m *Manager) GetAllNpcs() []*Npc {

@@ -6,6 +6,13 @@ import (
 	"os"
 )
 
+type NeedsWeightDTO struct {
+	Hunger     float64 `json:"hunger"`
+	Fatigue    float64 `json:"fatigue"`
+	Loneliness float64 `json:"loneliness"`
+	Schedule   float64 `json:"schedule"`
+}
+
 type ScheduleActionDTO struct {
 	Activity  string `json:"activity"`
 	Location  string `json:"location"`
@@ -23,6 +30,7 @@ type TemplateDTO struct {
 	Schedule       []ScheduleActionDTO `json:"schedule"`
 	HomeLocation   string              `json:"homeLocation"`
 	EatingLocation string              `json:"eatingLocation"`
+	NeedsWeight    NeedsWeightDTO      `json:"needsWeight"`
 }
 
 type Data struct {
@@ -75,6 +83,12 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 			}(),
 			npcData.HomeLocation,
 			npcData.EatingLocation,
+			NeedWeight{
+				Hunger:     npcData.NeedsWeight.Hunger,
+				Fatigue:    npcData.NeedsWeight.Fatigue,
+				Loneliness: npcData.NeedsWeight.Loneliness,
+				Schedule:   npcData.NeedsWeight.Schedule,
+			},
 		)
 		npcs = append(npcs, npc)
 	}

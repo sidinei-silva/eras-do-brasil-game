@@ -24,9 +24,10 @@ type Npc struct {
 	HomeLocation      string           // Local onde o NPC mora para dormir
 	EatingLocation    string           // Local onde o NPC come
 	ActivityStartedAt time.Time        // Hora em que a atividade atual começou
+	NeedsWeight       NeedWeight       // Pesos para cada necessidade, usados na decisão de atividades
 }
 
-func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction, homeLocation string, eatingLocation string) *Npc {
+func NewNpc(id string, name string, role Role, currentZone string, description string, backstory string, schedule []ScheduleAction, homeLocation string, eatingLocation string, needsWeight NeedWeight) *Npc {
 	return &Npc{
 		Id:              id,
 		Name:            name,
@@ -43,5 +44,6 @@ func NewNpc(id string, name string, role Role, currentZone string, description s
 		},
 		HomeLocation:   homeLocation,
 		EatingLocation: eatingLocation,
+		NeedsWeight:    needsWeight,
 	}
 }

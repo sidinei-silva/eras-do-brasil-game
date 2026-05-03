@@ -9,12 +9,18 @@
             "id": "npc_ferreiro_tomas",
             "name": "Tomas, o Ferreiro",
             "role": "merchant",
+            "needsWeight": {
+                "hunger": 0.30,
+                "loneliness": 0.10,
+                "fatigue": 0.30,
+                "schedule": 0.50
+            },
             "schedule": [
                 {
                     "activity": "working",
                     "endHour": 12,
                     "location": "oficina do ferreiro",
-                    "startHour": 8
+                    "startHour": 7
                 },
                 {
                     "activity": "working",
@@ -46,7 +52,13 @@
                     "location": "portão da vila",
                     "startHour": 12
                 }
-            ]
+            ],
+            "needsWeight": {
+                "hunger": 0.15,
+                "loneliness": 0.05,
+                "fatigue": 0.20,
+                "schedule": 0.60
+            }
         },
         {
             "backstory": "Naila é uma curandeira talentosa que utiliza ervas e poções para tratar os ferimentos dos habitantes da vila. Ela é conhecida por sua compaixão e dedicação em ajudar os outros.",
@@ -70,7 +82,13 @@
                     "location": "mercado central",
                     "startHour": 13
                 }
-            ]
+            ],
+            "needs_weight": {
+                "hunger": 0.20,
+                "loneliness": 0.30,
+                "fatigue": 0.20,
+                "schedule": 0.40
+            }
         }
     ]
 }
