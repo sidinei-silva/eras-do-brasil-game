@@ -1,6 +1,8 @@
 package snapshot
 
 import (
+	"log/slog"
+
 	"github.com/sidinei-silva/eras-do-brasil-game/server/npc"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
@@ -25,13 +27,7 @@ type Snapshot struct {
 	// Online   int
 }
 
-// Build monta uma Snapshot a partir dos managers atuais.
-// Chamado pelo GameLoop ao final de cada tick, depois que todos os
-// ProcessTick rodaram.
-//
-// Conforme novos managers forem adicionados, eles entram como parâmetro
-// aqui (não em um GameState central).
-func Build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
+func build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
 	snap := &Snapshot{
 		Tick:     tick,
 		GameTime: worldMgr.GameTime(),
@@ -50,4 +46,56 @@ func Build(tick int64, worldMgr *world.Manager, npcMgr *npc.Manager) *Snapshot {
 	}
 
 	return snap
+}
+
+func (s *Snapshot) GetNPCById(id string) (*npc.Npc, bool) {
+	for _, npc := range s.NPCs {
+		if npc.Id == id {
+			return &npc, true
+		}
+	}
+	return nil, false
+}
+
+func (s *Snapshot) GetNpcScores(npcId string) map[string]float64 {
+	npc, found := s.GetNPCById(npcId)
+
+	if !found {
+		slog.Warn("NPC não encontrado para calcular scores", "npc_id", npcId)
+		return nil
+	}
+	gameTime := s.GetGameTime()
+	scores := npc.CalculateScores(gameTime.Time.Hour())
+	return scores
+}
+
+func (s *Snapshot) GetBlockById(id string) (*world.Block, bool) {
+	for _, block := range s.Blocks {
+		if block.Id == id {
+			return &block, true
+		}
+	}
+	return nil, false
+}
+
+func (s *Snapshot) GetNPCsInZone(zoneId string) []npc.Npc {
+	npcsInZone := make([]npc.Npc, 0)
+	for _, npc := range s.NPCs {
+		if npc.CurrentZone == zoneId {
+			npcsInZone = append(npcsInZone, npc)
+		}
+	}
+	return npcsInZone
+}
+
+func (s *Snapshot) GetAllNPCs() []npc.Npc {
+	return s.NPCs
+}
+
+func (s *Snapshot) GetAllBlocks() []world.Block {
+	return s.Blocks
+}
+
+func (s *Snapshot) GetGameTime() world.GameTime {
+	return s.GameTime
 }

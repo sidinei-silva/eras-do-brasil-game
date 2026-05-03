@@ -48,9 +48,11 @@ func main() {
 	playerHub := playerSocket.NewHub(cmdQueue)
 	adminHub := adminSocket.NewHub()
 
+	snapManager := snapshot.NewManager()
+
 	// Roteadores
 	playerRouter := command.NewPlayerRouter(cmdQueue)
-	adminRouter := command.NewAdminRouter(cmdQueue, adminHub)
+	adminRouter := command.NewAdminRouter(cmdQueue, adminHub, snapManager)
 
 	//Injeta o Router no Hub
 	adminHub.SetRouter(adminRouter)
@@ -96,7 +98,7 @@ func main() {
 		npcManager.ProcessTick(worldManager.GameTime(), worldManager.TickDuration())
 
 		// Passo 4: Modo Deus - Tira a foto e manda para o Admin Hub
-		snapshot := snapshot.Build(gameLoop.TickCount(), worldManager, npcManager)
+		snapshot := snapManager.BuildSnapshot(gameLoop.TickCount(), worldManager, npcManager)
 		adminHub.Publish(snapshot)
 	})
 

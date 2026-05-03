@@ -3,6 +3,8 @@ package command
 import (
 	"encoding/json"
 	"log/slog"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/snapshot"
 )
 
 // Interface para o Router enviar respostas sem criar dependência circular com o Hub.
@@ -11,14 +13,15 @@ type AdminNotifier interface {
 }
 
 type AdminRouter struct {
-	gameQueue *CommandQueue
-	notifier  AdminNotifier
-	// worldManager *world.Manager // Injetar quando precisar de consultas imediatas no mundo
+	gameQueue   *CommandQueue
+	notifier    AdminNotifier
+	snapManager *snapshot.Manager // Injetar para acessar o snapshot mais recente e garantir consistência com o que o admin vê no cliente.
+	// npcManager *npc.Manager // Injetar quando precisar de consultas imediatas no mundo
 }
 
 // NewAdminRouter cria o roteador e injeta a fila do motor do jogo
-func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier) *AdminRouter {
-	return &AdminRouter{gameQueue: gameQueue, notifier: notifier}
+func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier, snapManager *snapshot.Manager) *AdminRouter {
+	return &AdminRouter{gameQueue: gameQueue, notifier: notifier, snapManager: snapManager}
 }
 
 // Route é chamado pelo readPump da sessão admin
@@ -48,15 +51,56 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 			return
 		}
 
-		// Busca no WorldManager
-		// state, ok := r.worldManager.GetNPCState(payload.ID)
-		// if !ok {
-		// 	r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
-		// 	return
-		// }
+		snapshot := r.snapManager.GetSnapshot()
+		if snapshot == nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+			return
+		}
 
-		// r.notifier.Send("command", "npc_details", state)
+		npc, found := snapshot.GetNPCById(payload.ID)
+
+		if !found {
+			r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
+			return
+		}
+
+		r.notifier.Send("command", "admin_get_npc", npc)
 		slog.Info("Admin solicitou dados do NPC", "id", payload.ID)
+
+	// COMANDO GET SNAP
+	case "admin_get_snapshot":
+		snapshot := r.snapManager.GetSnapshot()
+		if snapshot == nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+			return
+		}
+		r.notifier.Send("command", "admin_get_snapshot", snapshot)
+		slog.Info("Admin solicitou snapshot", "tick", snapshot.Tick, "gameTime", snapshot.GetGameTime())
+
+	case "admin_get_npc_scores":
+		var payload struct {
+			ID string `json:"id"`
+		}
+
+		if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+			return
+		}
+
+		snapshot := r.snapManager.GetSnapshot()
+		if snapshot == nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+			return
+		}
+
+		scores := snapshot.GetNpcScores(payload.ID)
+		if scores == nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "npc scores not found", "id": payload.ID})
+			return
+		}
+
+		r.notifier.Send("command", "admin_get_npc_scores", scores)
+		slog.Info("Admin solicitou scores do NPC", "id", payload.ID)
 
 	default:
 		r.notifier.Send("command", "error", map[string]string{
