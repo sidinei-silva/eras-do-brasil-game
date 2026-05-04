@@ -47,12 +47,12 @@
 
 > **Refinamento:** [refinements/1.3-utility-ai-intermediario.md](product/refinements/1.3-utility-ai-intermediario.md)
 
-- [ ] Adicionar need `Social` (decaimento na ausência de outros NPCs no mesmo zone string)
-- [ ] Adicionar need `Seguranca` (placeholder fixo, sem efeito real até blocos existirem)
+- [x] Adicionar need `Social` (decaimento na ausência de outros NPCs no mesmo zone string)
+- [x] Adicionar need `Seguranca` (placeholder fixo, sem efeito real até blocos existirem)
 - [x] Trocar thresholds hardcoded por sistema de scoring (Score = Peso × f(need))
 - [x] Pesos configuráveis via JSON no template do NPC (sem Traits ainda)
 - [x] Função de decisão retorna a meta vencedora; fallback Idle se nenhuma passar do threshold mínimo
-- [ ] Admin pode ver scoring de um NPC específico (comando OOB retorna ranking de metas)
+- [x] Admin pode ver scoring de um NPC específico (comando OOB retorna ranking de metas)
 
 ### 1.4 — Movimento de NPCs (integra 1.2 + 1.3)
 
