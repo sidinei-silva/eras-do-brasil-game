@@ -72,14 +72,16 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 		if npc.IsDiscreteActivity() {
 			if npc.IsActivityComplete(gameTime) {
 				npc.ApplyActivityEffects()
-				slog.Info("npc atividade concluída",
-					"id", npc.Id,
-					"npc", npc.Name,
-					"activity", npc.CurrentActivity,
-					"hunger", int(npc.Needs.Hunger),
-					"fatigue", int(npc.Needs.Fatigue),
-					"loneliness", int(npc.Needs.Loneliness),
-				)
+				if config.Log.NPCBehavior {
+					slog.Info("npc atividade concluída",
+						"id", npc.Id,
+						"npc", npc.Name,
+						"activity", npc.CurrentActivity,
+						"hunger", int(npc.Needs.Hunger),
+						"fatigue", int(npc.Needs.Fatigue),
+						"loneliness", int(npc.Needs.Loneliness),
+					)
+				}
 				m.decideNextActivity(npc, gameTime)
 			}
 			// Se não terminou, segue na atividade
@@ -122,17 +124,19 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	npc.TransitionTo(desiredActivity, desiredLocation, gameTime)
 
-	slog.Info("npc transicionou atividade",
-		"id", npc.Id,
-		"npc", npc.Name,
-		"hora", hour,
-		"de", previousActivity,
-		"para", desiredActivity,
-		"de_zona", previousLocation,
-		"para_zona", desiredLocation,
-		"motivo", winner,
-		"score", int(winnerScore),
-	)
+	if config.Log.NPCBehavior {
+		slog.Info("npc transicionou atividade",
+			"id", npc.Id,
+			"npc", npc.Name,
+			"hora", hour,
+			"de", previousActivity,
+			"para", desiredActivity,
+			"de_zona", previousLocation,
+			"para_zona", desiredLocation,
+			"motivo", winner,
+			"score", int(winnerScore),
+		)
+	}
 }
 
 func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string, string, float64) {

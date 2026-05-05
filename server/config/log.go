@@ -34,6 +34,10 @@ type LogConfig struct {
 	// WorldLoading exibe detalhes do carregamento de blocos e NPCs na inicialização.
 	// Env: LOG_WORLD_LOADING (padrão: false)
 	WorldLoading bool
+
+	// NPCBehavior exibe decisões de comportamento dos NPCs (transições de atividade, etc.).
+	// Env: LOG_NPC_BEHAVIOR (padrão: false)
+	NPCBehavior bool
 }
 
 // Log é a configuração global de log. Inicializada uma vez na startup do processo.
@@ -44,6 +48,7 @@ var Log = &LogConfig{
 	CommandRouting: getEnvBool("LOG_COMMAND_ROUTING", false),
 	GameLoopTicks:  getEnvBool("LOG_GAME_LOOP_TICKS", false),
 	WorldLoading:   getEnvBool("LOG_WORLD_LOADING", false),
+	NPCBehavior:    getEnvBool("LOG_NPC_BEHAVIOR", false),
 }
 
 func getEnv(key, fallback string) string {
