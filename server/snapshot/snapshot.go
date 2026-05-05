@@ -81,7 +81,7 @@ func (s *Snapshot) GetBlockById(id string) (*world.Block, bool) {
 func (s *Snapshot) GetNPCsInZone(zoneId string) []npc.Npc {
 	npcsInZone := make([]npc.Npc, 0)
 	for _, npc := range s.NPCs {
-		if npc.CurrentZone == zoneId {
+		if npc.CurrentBlock == zoneId {
 			npcsInZone = append(npcsInZone, npc)
 		}
 	}

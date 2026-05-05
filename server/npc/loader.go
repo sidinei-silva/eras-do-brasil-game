@@ -23,16 +23,16 @@ type ScheduleActionDTO struct {
 }
 
 type TemplateDTO struct {
-	Backstory      string              `json:"backstory"`
-	CurrentZone    string              `json:"currentZone"`
-	Description    string              `json:"description"`
-	Id             string              `json:"id"`
-	Name           string              `json:"name"`
-	Role           string              `json:"role"`
-	Schedule       []ScheduleActionDTO `json:"schedule"`
-	HomeLocation   string              `json:"homeLocation"`
-	EatingLocation string              `json:"eatingLocation"`
-	NeedsWeight    NeedsWeightDTO      `json:"needsWeight"`
+	Backstory    string              `json:"backstory"`
+	CurrentBlock string              `json:"currentBlock"`
+	Description  string              `json:"description"`
+	Id           string              `json:"id"`
+	Name         string              `json:"name"`
+	Role         string              `json:"role"`
+	Schedule     []ScheduleActionDTO `json:"schedule"`
+	HomePoi      string              `json:"homePoi"`
+	EatingPoi    string              `json:"eatingPoi"`
+	NeedsWeight  NeedsWeightDTO      `json:"needsWeight"`
 }
 
 type Data struct {
@@ -68,7 +68,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 			npcData.Id,
 			npcData.Name,
 			Role(npcData.Role),
-			npcData.CurrentZone,
+			npcData.CurrentBlock,
 			npcData.Description,
 			npcData.Backstory,
 			func() []ScheduleAction {
@@ -83,8 +83,8 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 				}
 				return schedule
 			}(),
-			npcData.HomeLocation,
-			npcData.EatingLocation,
+			npcData.HomePoi,
+			npcData.EatingPoi,
 			NeedWeight{
 				Hunger:     npcData.NeedsWeight.Hunger,
 				Fatigue:    npcData.NeedsWeight.Fatigue,
@@ -93,7 +93,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 			},
 		)
 		if config.Log.WorldLoading {
-			slog.Debug("npc carregado", "id", npc.Id, "name", npc.Name, "role", npc.Role, "zone", npc.CurrentZone)
+			slog.Debug("npc carregado", "id", npc.Id, "name", npc.Name, "role", npc.Role, "zone", npc.CurrentBlock)
 		}
 		npcs = append(npcs, npc)
 	}
