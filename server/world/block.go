@@ -36,9 +36,10 @@ type Block struct {
 	LevelRange  LevelRange   // Faixa de nível recomendada para explorar este bloco.
 	Region      Region       // Região à qual o bloco pertence.
 	Tags        []string     // Tags de categorização extra (ex.: ["dangerous", "resource-rich"]).
+	Pois        []string     // Pontos de interesse dentro do bloco (ex.: "abandoned_house", "hidden_cave").
 }
 
-func NewBlock(id string, name string, blockType BlockType, description string, levelRange LevelRange, region Region, tags []string) *Block {
+func NewBlock(id string, name string, blockType BlockType, description string, levelRange LevelRange, region Region, tags []string, pois []string) *Block {
 	return &Block{
 		Id:          id,
 		Name:        name,
@@ -47,5 +48,6 @@ func NewBlock(id string, name string, blockType BlockType, description string, l
 		LevelRange:  levelRange,
 		Region:      region,
 		Tags:        tags,
+		Pois:        pois,
 	}
 }

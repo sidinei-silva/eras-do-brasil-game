@@ -60,7 +60,17 @@
                 "hub",
                 "starter"
             ],
-            "type": "urban"
+            "type": "urban",
+            "pois": [
+                "oficina_do_ferreiro",
+                "casa_do_ferreiro",
+                "taverna_da_vila",
+                "capela",
+                "mercado_central",
+                "portao_da_vila",
+                "quartel_da_guarda",
+                "cabana_da_curandeira"
+            ]
         },
         {
             "connections": [

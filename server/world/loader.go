@@ -29,6 +29,7 @@ type TemplateBlock struct {
 	LevelRange  TemplateLevelRange   `json:"levelRange"`
 	Region      Region               `json:"region"`
 	Tags        []string             `json:"tags"`
+	Pois        []string             `json:"pois"`
 }
 
 type Data struct {
@@ -59,6 +60,7 @@ func LoadBlocksFromFile() ([]*Block, error) {
 	blocks := make([]*Block, 0, len(data.Blocks))
 
 	for _, blockData := range data.Blocks {
+		checkDuplicatedPoisInBlock(&blockData)
 		block := NewBlock(
 			blockData.Id,
 			blockData.Name,
@@ -70,6 +72,7 @@ func LoadBlocksFromFile() ([]*Block, error) {
 			},
 			blockData.Region,
 			blockData.Tags,
+			blockData.Pois,
 		)
 
 		for _, connData := range blockData.Connections {
@@ -93,10 +96,22 @@ func LoadBlocksFromFile() ([]*Block, error) {
 		}
 
 		if config.Log.WorldLoading {
-			slog.Debug("bloco carregado", "id", block.Id, "name", block.Name, "type", block.Type, "connections", len(block.Connections))
+			slog.Debug("bloco carregado", "id", block.Id, "name", block.Name, "type", block.Type, "connections", len(block.Connections), "pois", len(block.Pois))
 		}
 		blocks = append(blocks, block)
 	}
 
 	return blocks, nil
+}
+
+func checkDuplicatedPoisInBlock(block *TemplateBlock) {
+	poiSet := make(map[string]struct{})
+	for _, poi := range block.Pois {
+		if _, exists := poiSet[poi]; exists {
+			slog.Warn("POI duplicado encontrado", "blockId", block.Id, "poi", poi)
+			panic("POI duplicado encontrado: " + poi)
+		} else {
+			poiSet[poi] = struct{}{}
+		}
+	}
 }
