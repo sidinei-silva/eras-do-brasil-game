@@ -4,7 +4,7 @@ type Activity string
 
 type ScheduleAction struct {
 	Activity  Activity // A atividade que o NPC irá realizar
-	Location  string   // O local onde a atividade acontecerá
+	PoiId     string   // O local onde a atividade acontecerá
 	StartHour int      // Hora de início da atividade (0-23)
 	EndHour   int      // Hora de término da atividade (0-23)
 }

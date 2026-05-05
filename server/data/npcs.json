@@ -19,13 +19,13 @@
                 {
                     "activity": "working",
                     "endHour": 12,
-                    "location": "oficina do ferreiro",
+                    "poiId": "oficina_do_ferreiro",
                     "startHour": 7
                 },
                 {
                     "activity": "working",
                     "endHour": 17,
-                    "location": "mercado central",
+                    "poiId": "mercado_central",
                     "startHour": 13
                 }
             ]
@@ -43,13 +43,13 @@
                 {
                     "activity": "working",
                     "endHour": 12,
-                    "location": "portão da vila",
+                    "poiId": "portao_da_vila",
                     "startHour": 6
                 },
                 {
                     "activity": "working",
                     "endHour": 18,
-                    "location": "portão da vila",
+                    "poiId": "portao_da_vila",
                     "startHour": 12
                 }
             ],
@@ -73,13 +73,13 @@
                 {
                     "activity": "working",
                     "endHour": 12,
-                    "location": "cabana da curandeira",
+                    "poiId": "cabana_da_curandeira",
                     "startHour": 7
                 },
                 {
                     "activity": "working",
                     "endHour": 16,
-                    "location": "mercado central",
+                    "poiId": "mercado_central",
                     "startHour": 13
                 }
             ],

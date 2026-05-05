@@ -156,7 +156,7 @@ func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string, 
 		activity, location = ActivitySleeping, npc.HomePoi
 	case "Schedule":
 		action, _ := npc.ActiveScheduleAt(hour)
-		activity, location = action.Activity, action.Location
+		activity, location = action.Activity, action.PoiId
 	}
 
 	return activity, location, winner, maxScore

@@ -17,7 +17,7 @@ type NeedsWeightDTO struct {
 
 type ScheduleActionDTO struct {
 	Activity  string `json:"activity"`
-	Location  string `json:"location"`
+	PoiId     string `json:"poiId"`
 	StartHour int    `json:"startHour"`
 	EndHour   int    `json:"endHour"`
 }
@@ -76,7 +76,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 				for i, action := range npcData.Schedule {
 					schedule[i] = ScheduleAction{
 						Activity:  Activity(action.Activity),
-						Location:  action.Location,
+						PoiId:     action.PoiId,
 						StartHour: action.StartHour,
 						EndHour:   action.EndHour,
 					}
