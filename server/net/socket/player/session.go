@@ -132,7 +132,7 @@ func (c *PlayerSession) writePump(ctx context.Context) {
 			}
 
 		case <-ctx.Done():
-			slog.Info("contexto cancelado, encerrando writePump")
+			slog.Debug("contexto cancelado, encerrando writePump do jogador", "player", c.name)
 			return
 		}
 	}

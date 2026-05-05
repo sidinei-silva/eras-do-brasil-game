@@ -109,13 +109,13 @@ func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 		case client := <-h.register:
 			h.clients[client] = true
-			slog.Info("Admin registrado no Hub")
+			slog.Info("admin conectado", "id", client.id, "total_admins", len(h.clients))
 
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
-				slog.Info("Admin desregistrado")
+				slog.Info("admin desconectado", "id", client.id, "total_admins", len(h.clients))
 			}
 
 		// FILA A: Distribui bytes que já vieram prontos do h.send()
@@ -166,9 +166,8 @@ func (h *Hub) ServeWS(mux *http.ServeMux, ctx context.Context, wg *sync.WaitGrou
 
 		select {
 		case h.register <- client:
-			slog.Info("admin connected", "id", client.id)
 		default:
-			slog.Warn("hub register queue full")
+			slog.Warn("admin hub register queue full, recusando conexão", "id", client.id)
 			_ = conn.Close(websocket.StatusTryAgainLater, "server busy")
 			return
 		}

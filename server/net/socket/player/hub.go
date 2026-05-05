@@ -62,8 +62,7 @@ func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
 				"online": len(h.clients),
 			}
 			h.emitSystem("player_joined", data)
-
-			slog.Info("Novo cliente registrado", "total_clientes", h.online.Load())
+			slog.Info("jogador conectado", "player", client.name, "id", client.id, "online", h.online.Load())
 
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
@@ -75,6 +74,7 @@ func (h *Hub) Run(ctx context.Context, wg *sync.WaitGroup) {
 					"online": len(h.clients),
 				}
 				h.emitSystem("player_left", data)
+				slog.Info("jogador desconectado", "player", client.name, "id", client.id, "online", h.online.Load())
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {

@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 )
 
 // tickInterval é o tempo real entre cada tick do loop principal.
@@ -75,6 +77,9 @@ func (gl *GameLoop) StartGameLoop(ctx context.Context, wg *sync.WaitGroup) {
 			gl.tickCount.Add(1)
 			gl.reactionsForTick()
 			gl.LastTickDuration = time.Since(start)
+			if config.Log.GameLoopTicks {
+				slog.Debug("tick processado", "tick", gl.tickCount.Load(), "duracao_ms", gl.LastTickDuration.Milliseconds())
+			}
 		}
 	}
 }

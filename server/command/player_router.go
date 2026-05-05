@@ -3,6 +3,8 @@ package command
 import (
 	"encoding/json"
 	"log/slog"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 )
 
 type PlayerRouter struct {
@@ -38,7 +40,9 @@ func (r *PlayerRouter) Route(cmd PlayerCommand) {
 	case TypeMove, TypeAttack:
 		// Não faz parse aqui: a decisão fica centralizada no fluxo síncrono do GameLoop.
 		r.gameQueue.Enqueue(cmd)
-		slog.Info("Comando de simulação enfileirado", "type", cmd.Message.Type)
+		if config.Log.CommandRouting {
+			slog.Debug("comando de simulação enfileirado", "type", cmd.Message.Type, "playerID", cmd.PlayerID)
+		}
 	default:
 		slog.Warn("Comando desconhecido recebido", "type", cmd.Message.Type, "playerID", cmd.PlayerID)
 

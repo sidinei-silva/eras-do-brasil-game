@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/snapshot"
 )
 
@@ -65,7 +66,9 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		}
 
 		r.notifier.Send("command", "admin_get_npc", npc)
-		slog.Info("Admin solicitou dados do NPC", "id", payload.ID)
+		if config.Log.CommandRouting {
+			slog.Debug("admin consultou NPC", "id", payload.ID)
+		}
 
 	// COMANDO GET SNAP
 	case "admin_get_snapshot":
@@ -75,7 +78,9 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 			return
 		}
 		r.notifier.Send("command", "admin_get_snapshot", snapshot)
-		slog.Info("Admin solicitou snapshot", "tick", snapshot.Tick, "gameTime", snapshot.GetGameTime())
+		if config.Log.CommandRouting {
+			slog.Debug("admin consultou snapshot", "tick", snapshot.Tick, "gameTime", snapshot.GetGameTime())
+		}
 
 	case "admin_get_npc_scores":
 		var payload struct {
@@ -100,7 +105,9 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		}
 
 		r.notifier.Send("command", "admin_get_npc_scores", scores)
-		slog.Info("Admin solicitou scores do NPC", "id", payload.ID)
+		if config.Log.CommandRouting {
+			slog.Debug("admin consultou scores do NPC", "id", payload.ID)
+		}
 
 	default:
 		r.notifier.Send("command", "error", map[string]string{

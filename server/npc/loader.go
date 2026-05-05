@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 )
 
 type NeedsWeightDTO struct {
@@ -90,6 +92,9 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 				Schedule:   npcData.NeedsWeight.Schedule,
 			},
 		)
+		if config.Log.WorldLoading {
+			slog.Debug("npc carregado", "id", npc.Id, "name", npc.Name, "role", npc.Role, "zone", npc.CurrentZone)
+		}
 		npcs = append(npcs, npc)
 	}
 

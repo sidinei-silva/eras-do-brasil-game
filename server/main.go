@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	charmlog "github.com/charmbracelet/log"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/command"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/engine"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/net/api"
 	adminSocket "github.com/sidinei-silva/eras-do-brasil-game/server/net/socket/admin"
@@ -24,13 +24,26 @@ import (
 
 func main() {
 
+	var logLevel charmlog.Level
+	switch config.Log.Level {
+	case "debug":
+		logLevel = charmlog.DebugLevel
+	case "warn":
+		logLevel = charmlog.WarnLevel
+	case "error":
+		logLevel = charmlog.ErrorLevel
+	default:
+		logLevel = charmlog.InfoLevel
+	}
+
 	charmLogger := charmlog.NewWithOptions(os.Stderr, charmlog.Options{
-		Level:           charmlog.DebugLevel,
+		Level:           logLevel,
 		TimeFormat:      time.TimeOnly,
 		ReportCaller:    false,
 		ReportTimestamp: true,
 	})
 	slog.SetDefault(slog.New(charmLogger))
+	slog.Info("Logger inicializado", "level", config.Log.Level)
 
 	// Cria um contexto que escuta os sinais SIGINT (Ctrl+C) e SIGTERM
 	// 1. Escuta o sinal de parada do Sistema Operacional
@@ -116,17 +129,17 @@ func main() {
 	go adminHub.Run(ctx, &wg)
 	go httpServer.StartHTTPServer(ctx, &wg)
 
-	fmt.Println("Sistema rodando. Pressione Ctrl+C para interromper.")
+	slog.Info("Servidor pronto. Aguardando conexões.")
 
 	// A main goroutine bloqueia aqui até que o sistema receba o sinal
 	// 2. Trava a execução aqui até o usuário apertar Ctrl+C
 	<-ctx.Done()
-	fmt.Println("\nSinal de interrupção recebido. Iniciando encerramento gracioso (Graceful Shutdown)...")
+	slog.Warn("Sinal de encerramento recebido. Iniciando graceful shutdown...")
 	httpServer.StopHTTPServer(ctx)
 
 	// Main bloqueia novamente aqui. Só avança quando todos os `wg.Done()` forem chamados.
 	wg.Wait()
 
-	fmt.Println("Todos os processos foram encerrados. Saindo do programa.")
+	slog.Info("Todos os processos encerrados. Saindo.")
 
 }

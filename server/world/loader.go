@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 )
 
 type TemplateConnection struct {
@@ -90,6 +92,9 @@ func LoadBlocksFromFile() ([]*Block, error) {
 			block.Connections = append(block.Connections, connection)
 		}
 
+		if config.Log.WorldLoading {
+			slog.Debug("bloco carregado", "id", block.Id, "name", block.Name, "type", block.Type, "connections", len(block.Connections))
+		}
 		blocks = append(blocks, block)
 	}
 

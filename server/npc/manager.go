@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
@@ -18,8 +19,10 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 
-	for _, npc := range npcs {
-		slog.Debug("🆕🆕 ["+npc.Id+"] schedule loaded", "npc", npc.Name, "role", npc.Role, "blocks", len(npc.Schedule))
+	if config.Log.NPCSchedule {
+		for _, npc := range npcs {
+			slog.Debug("npc schedule carregado", "id", npc.Id, "npc", npc.Name, "role", npc.Role, "blocos", len(npc.Schedule))
+		}
 	}
 
 	return &Manager{npcs: npcs}, nil
@@ -40,26 +43,28 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 		npcsInZone := m.getNpcsInZone(npc.CurrentZone, npc.Id)
 		hasCompany := len(npcsInZone) > 0
 
-		slog.Debug("ℹ️ ℹ️ ["+npc.Id+"] needs before decay",
-			"id", npc.Id,
-			"npc", npc.Name,
-			"activity", npc.CurrentActivity,
-			"has_company", hasCompany,
-			"zone", npc.CurrentZone,
-			"hunger", int(npc.Needs.Hunger),
-			"fatigue", int(npc.Needs.Fatigue),
-			"loneliness", int(npc.Needs.Loneliness),
-			"score_hunger", npc.CalculateScores(gameTime.Time.Hour())["Hunger"],
-			"score_fatigue", npc.CalculateScores(gameTime.Time.Hour())["Fatigue"],
-			"score_schedule", npc.CalculateScores(gameTime.Time.Hour())["Schedule"],
-			"npcs_in_zone_id", func() []string {
-				ids := make([]string, 0, len(npcsInZone))
-				for _, n := range npcsInZone {
-					ids = append(ids, n.Id)
-				}
-				return ids
-			}(),
-		)
+		if config.Log.NPCNeeds {
+			hour := gameTime.Time.Hour()
+			scores := npc.CalculateScores(hour)
+			ids := make([]string, 0, len(npcsInZone))
+			for _, n := range npcsInZone {
+				ids = append(ids, n.Id)
+			}
+			slog.Debug("npc needs antes do decay",
+				"id", npc.Id,
+				"npc", npc.Name,
+				"activity", npc.CurrentActivity,
+				"has_company", hasCompany,
+				"zone", npc.CurrentZone,
+				"hunger", int(npc.Needs.Hunger),
+				"fatigue", int(npc.Needs.Fatigue),
+				"loneliness", int(npc.Needs.Loneliness),
+				"score_hunger", scores["Hunger"],
+				"score_fatigue", scores["Fatigue"],
+				"score_schedule", scores["Schedule"],
+				"npcs_na_zona", ids,
+			)
+		}
 
 		npc.ApplyDecay(tickHours, hasCompany)
 
@@ -67,7 +72,7 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 		if npc.IsDiscreteActivity() {
 			if npc.IsActivityComplete(gameTime) {
 				npc.ApplyActivityEffects()
-				slog.Info("✅✅ ["+npc.Id+"] activity done",
+				slog.Info("npc atividade concluída",
 					"id", npc.Id,
 					"npc", npc.Name,
 					"activity", npc.CurrentActivity,
@@ -86,15 +91,17 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 		// Passo 4: invariantes
 		npc.ClampNeeds()
 
-		slog.Debug("ℹ️ ℹ️ ["+npc.Id+"] needs updated",
-			"id", npc.Id,
-			"npc", npc.Name,
-			"activity", npc.CurrentActivity,
-			"zone", npc.CurrentZone,
-			"hunger", int(npc.Needs.Hunger),
-			"fatigue", int(npc.Needs.Fatigue),
-			"loneliness", int(npc.Needs.Loneliness),
-		)
+		if config.Log.NPCNeeds {
+			slog.Debug("npc needs após tick",
+				"id", npc.Id,
+				"npc", npc.Name,
+				"activity", npc.CurrentActivity,
+				"zone", npc.CurrentZone,
+				"hunger", int(npc.Needs.Hunger),
+				"fatigue", int(npc.Needs.Fatigue),
+				"loneliness", int(npc.Needs.Loneliness),
+			)
+		}
 	}
 }
 
@@ -115,15 +122,15 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	npc.TransitionTo(desiredActivity, desiredLocation, gameTime)
 
-	slog.Info("🚶‍♂️‍➡️🚶‍♂️‍➡️ ["+npc.Id+"] transitioned",
+	slog.Info("npc transicionou atividade",
 		"id", npc.Id,
 		"npc", npc.Name,
-		"hour", hour,
-		"from", previousActivity,
-		"to", desiredActivity,
-		"from_zone", previousLocation,
-		"to_zone", desiredLocation,
-		"winner", winner,
+		"hora", hour,
+		"de", previousActivity,
+		"para", desiredActivity,
+		"de_zona", previousLocation,
+		"para_zona", desiredLocation,
+		"motivo", winner,
 		"score", int(winnerScore),
 	)
 }

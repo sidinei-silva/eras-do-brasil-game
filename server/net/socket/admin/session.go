@@ -102,7 +102,7 @@ func (c *AdminSession) writePump(ctx context.Context) {
 				return
 			}
 		case <-ctx.Done():
-			slog.Info("contexto cancelado, encerrando writePump")
+			slog.Debug("contexto cancelado, encerrando writePump do admin", "id", c.id)
 			return
 		}
 	}
