@@ -2,7 +2,7 @@
     "npcs": [
         {
             "backstory": "Tomas é um ferreiro habilidoso que aprendeu o ofício com seu pai. Ele é conhecido por criar armas e armaduras de alta qualidade para os aventureiros que visitam a vila. Tomas é um homem trabalhador e dedicado, sempre disposto a ajudar os outros com suas habilidades de forja.",
-            "currentBlock": "mata_costeira-vila_de_sao_tome",
+            "currentBlock": "vila_sao_tome",
             "description": "Tomas é um ferreiro robusto e de meia-idade, com cabelos grisalhos e uma barba bem cuidada. Ele é conhecido por sua habilidade em forjar armas e armaduras de alta qualidade, e é um membro respeitado da comunidade local. Tomas é amigável e sempre disposto a compartilhar histórias sobre suas aventuras passadas e os desafios que enfrentou como ferreiro.",
             "eatingPoi": "taverna_da_vila",
             "homePoi": "casa_do_ferreiro",
@@ -32,7 +32,7 @@
         },
         {
             "backstory": "Ricardo é um guarda experiente que protege a vila de ameaças externas. Ele é conhecido por sua lealdade e determinação, sempre pronto para defender os habitantes da vila.",
-            "currentBlock": "mata_costeira-vila_de_sao_tome",
+            "currentBlock": "vila_sao_tome",
             "description": "Ricardo é um homem forte e vigilante, com uma aparência imponente e uma postura que transmite autoridade. Ele é respeitado por todos na vila por seu serviço dedicado à segurança.",
             "eatingPoi": "taverna_da_vila",
             "homePoi": "quartel_da_guarda",
@@ -62,7 +62,7 @@
         },
         {
             "backstory": "Naila é uma curandeira talentosa que utiliza ervas e poções para tratar os ferimentos dos habitantes da vila. Ela é conhecida por sua compaixão e dedicação em ajudar os outros.",
-            "currentBlock": "mata_costeira-vila_de_sao_tome",
+            "currentBlock": "vila_sao_tome",
             "description": "Naila é uma mulher gentil e experiente, com olhos compassivos e uma presença tranquilizadora. Ela é conhecida por sua habilidade em preparar poções e ervas que curam ferimentos e aliviam dores.",
             "eatingPoi": "taverna_da_vila",
             "homePoi": "cabana_da_curandeira",

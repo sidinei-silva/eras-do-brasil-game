@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
 type NeedsWeightDTO struct {
@@ -40,6 +41,7 @@ type Data struct {
 }
 
 func LoadNpcsFromFile() ([]*Npc, error) {
+	blocks, err := world.LoadBlocksFromFile()
 	filePath := os.Getenv("NPCS_FILE")
 
 	if filePath == "" {
@@ -64,6 +66,9 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 	npcs := make([]*Npc, 0, len(data.Npcs))
 
 	for _, npcData := range data.Npcs {
+
+		checkLocationsInNpcExists(&npcData, blocks)
+
 		npc := NewNpc(
 			npcData.Id,
 			npcData.Name,
@@ -99,4 +104,46 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 	}
 
 	return npcs, nil
+}
+
+func checkLocationsInNpcExists(npc *TemplateDTO, blocks []*world.Block) {
+
+	// Verificar se CurrentBlock existe
+	allBlocksIds := make(map[string]*world.Block)
+
+	for _, block := range blocks {
+		allBlocksIds[block.Id] = block
+	}
+
+	block, currentBlockExists := allBlocksIds[npc.CurrentBlock]
+	if !currentBlockExists {
+		slog.Error("Current block não encontrado para NPC", "npcId", npc.Id, "currentBlock", npc.CurrentBlock)
+		panic("Current block não encontrado para NPC")
+	}
+
+	allPois := make(map[string]bool)
+	for _, poi := range block.Pois {
+		allPois[poi] = true
+	}
+
+	// Verificar se HomePoi existe
+	if _, exists := allPois[npc.HomePoi]; !exists {
+		slog.Error("Home POI não encontrado para NPC", "npcId", npc.Id, "homePoi", npc.HomePoi)
+		panic("Home POI não encontrado para NPC")
+	}
+
+	// Verificar se EatingPoi existe
+	if _, exists := allPois[npc.EatingPoi]; !exists {
+		slog.Error("Eating POI não encontrado para NPC", "npcId", npc.Id, "eatingPoi", npc.EatingPoi)
+		panic("Eating POI não encontrado para NPC")
+	}
+
+	// Verificar se os pois da schedule existem
+	for _, action := range npc.Schedule {
+		if _, exists := allPois[action.PoiId]; !exists {
+			slog.Error("Schedule POI não encontrado para NPC", "npcId", npc.Id, "schedulePoi", action.PoiId)
+			panic("Schedule POI não encontrado para NPC")
+		}
+	}
+
 }
