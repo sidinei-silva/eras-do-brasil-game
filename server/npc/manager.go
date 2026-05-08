@@ -115,10 +115,11 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 	hour := gameTime.Time.Hour()
 	previousActivity := npc.CurrentActivity
-	previousLocation := npc.CurrentBlock
+	previousLocation := npc.CurrentPoi
+
 	desiredActivity, desiredLocation, winner, winnerScore := m.computeDesiredActivity(npc, hour)
 
-	if desiredActivity == npc.CurrentActivity && desiredLocation == npc.CurrentBlock {
+	if desiredActivity == npc.CurrentActivity && desiredLocation == npc.CurrentPoi {
 		return
 	}
 
@@ -141,7 +142,7 @@ func (m *Manager) decideNextActivity(npc *Npc, gameTime world.GameTime) {
 
 func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string, string, float64) {
 	scores := npc.CalculateScores(hour)
-	activity, location := ActivityIdle, npc.CurrentBlock
+	activity, location := ActivityIdle, npc.CurrentPoi
 	winner, maxScore := npc.PickWinnerScore(scores, npc.CurrentActivity)
 	const minActionableScore = 10.0
 

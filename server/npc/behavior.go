@@ -22,13 +22,13 @@ func (npc *Npc) IsActivityComplete(gameTime world.GameTime) bool {
 
 // TransitionTo muda a atividade e zona do NPC, registrando o momento
 // da troca. É chamado pelo Manager quando a decisão muda a atividade.
-func (npc *Npc) TransitionTo(activity Activity, location string, gameTime world.GameTime) {
-	if npc.CurrentActivity == activity && npc.CurrentBlock == location {
+func (npc *Npc) TransitionTo(activity Activity, poiId string, gameTime world.GameTime) {
+	if npc.CurrentActivity == activity && npc.CurrentPoi == poiId {
 		return
 	}
 
 	npc.CurrentActivity = activity
-	npc.CurrentBlock = location
+	npc.CurrentPoi = poiId
 	npc.ActivityStartedAt = gameTime.Time
 
 }
