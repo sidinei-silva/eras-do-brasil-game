@@ -99,3 +99,31 @@ func (s *Snapshot) GetAllBlocks() []world.Block {
 func (s *Snapshot) GetGameTime() world.GameTime {
 	return s.GameTime
 }
+
+// GetPoiCountsInBlock retorna contagem de NPCs por POI em um bloco específico
+func (s *Snapshot) GetPoiCountsInBlock(blockId string) []map[string]interface{} {
+	block, found := s.GetBlockById(blockId)
+	if !found {
+		return nil
+	}
+
+	result := make([]map[string]interface{}, 0, len(block.Pois))
+
+	// Contar NPCs em cada POI
+	for _, poiId := range block.Pois {
+		npcsInPoi := s.GetNPCsInLocation(blockId, poiId)
+		result = append(result, map[string]interface{}{
+			"poi_id": poiId,
+			"count":  len(npcsInPoi),
+		})
+	}
+
+	// Contar NPCs "outdoor" (sem POI específico)
+	npcsOutdoor := s.GetNPCsInLocation(blockId, "")
+	result = append(result, map[string]interface{}{
+		"poi_id": "outdoor",
+		"count":  len(npcsOutdoor),
+	})
+
+	return result
+}

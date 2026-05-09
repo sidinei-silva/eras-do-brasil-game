@@ -109,6 +109,38 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 			slog.Debug("admin consultou scores do NPC", "id", payload.ID)
 		}
 
+	case "admin_get_pois_in_block":
+		var payload struct {
+			BlockID string `json:"block_id"`
+		}
+
+		if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+			return
+		}
+
+		snapshot := r.snapManager.GetSnapshot()
+		if snapshot == nil {
+			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+			return
+		}
+
+		block, found := snapshot.GetBlockById(payload.BlockID)
+		if !found {
+			r.notifier.Send("command", "error", map[string]string{"error": "block not found", "id": payload.BlockID})
+			return
+		}
+
+		poiCounts := snapshot.GetPoiCountsInBlock(payload.BlockID)
+		r.notifier.Send("command", "admin_get_pois_in_block", map[string]interface{}{
+			"block_id":   block.Id,
+			"block_name": block.Name,
+			"pois":       poiCounts,
+		})
+		if config.Log.CommandRouting {
+			slog.Debug("admin consultou POIs do bloco", "block_id", payload.BlockID)
+		}
+
 	default:
 		r.notifier.Send("command", "error", map[string]string{
 			"error":   "unknown command",
