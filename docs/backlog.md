@@ -54,19 +54,19 @@
 - [x] Função de decisão retorna a meta vencedora; fallback Idle se nenhuma passar do threshold mínimo
 - [x] Admin pode ver scoring de um NPC específico (comando OOB retorna ranking de metas)
 
-### 1.4 — Movimento de NPCs (POIs & validação de localização) — Andamento
+### 1.4 — Movimento de NPCs (POIs & validação de localização) — ✅
 
 > Refinamento detalhado: [refinamento 1.4 — POIs e Localização Validada de NPCs](docs/product/refinements/1.4-movimento-de-npcs.md)
 
 - Escopo principal: introduzir POIs intra-bloco (lista de IDs por bloco) e validar localizações de NPCs no load; não implementa trânsito entre blocos nem estado walking.
 - Entradas:
-  - [ ] `Block` ganha campo `Pois []string` (loader + snapshot)
-  - [ ] Refactor dos campos de NPC: `currentZone` → `currentBlock`, adicionar `currentPoi` (vazio = outdoor), `homePoi`, `eatingPoi`; `schedule[].location` → `schedule[].poiId`
-  - [ ] Loader valida cruzamento `npcs.json` ↔ `blocks.json` (erros fatais na inicialização com mensagem clara)
-  - [ ] `TransitionTo(activity, poiId, gameTime)` atualiza `CurrentPoi`; `CurrentBlock` NÃO muda nesta fase
-  - [ ] Regra de Loneliness: comparar (CurrentBlock, CurrentPoi); `CurrentPoi==""` = "outdoor" virtual
-  - [ ] Comandos admin: `admin_get_npc_full` retorna `currentBlock` + `currentPoi`; novo `admin_get_pois_in_block <blockId>`
-  - [ ] Migração de dados: mapear valores antigos para `currentBlock`/`poiId` PT-BR snake_case (ex.: `oficina_do_ferreiro`, `taverna_da_vila`)
+  - [x] `Block` ganha campo `Pois []string` (loader + snapshot)
+  - [x] Refactor dos campos de NPC: `currentZone` → `currentBlock`, adicionar `currentPoi` (vazio = outdoor), `homePoi`, `eatingPoi`; `schedule[].location` → `schedule[].poiId`
+  - [x] Loader valida cruzamento `npcs.json` ↔ `blocks.json` (erros fatais na inicialização com mensagem clara)
+  - [x] `TransitionTo(activity, poiId, gameTime)` atualiza `CurrentPoi`; `CurrentBlock` NÃO muda nesta fase
+  - [x] Regra de Loneliness: comparar (CurrentBlock, CurrentPoi); `CurrentPoi==""` = "outdoor" virtual
+  - [x] Comandos admin: `admin_get_npc_full` retorna `currentBlock` + `currentPoi`; novo `admin_get_pois_in_block <blockId>`
+  - [x] Migração de dados: mapear valores antigos para `currentBlock`/`poiId` PT-BR snake_case (ex.: `oficina_do_ferreiro`, `taverna_da_vila`)
 
 - Exceções (o que NÃO entra nesta tarefa):
   - walking / trânsito intra-bloco com tempo
@@ -74,11 +74,11 @@
   - POI como struct rica (descrição/capacity/ownership)
   - persistência do POI atual entre reinícios
 - Critérios de aceite resumidos:
-  - [ ] Servidor sobe limpo com `npcs.json` e `blocks.json` migrados
-  - [ ] Servidor **falha na inicialização** se `currentBlock` ou qualquer `poiId` referenciar entidade inexistente, mostrando NPC e campo inválido
-  - [ ] Exemplos funcionais: Tomas mantém `currentBlock = vila_sao_tome` e transita entre POIs do bloco conforme schedule; regras de Loneliness seguem D3 (POIs diferentes = separados; ambos `""` no mesmo bloco = juntos)
-  - [ ] `admin_get_npc_full` e `admin_get_pois_in_block` retornam campos esperados
-  - [ ] `go build` e `go vet` limpos
+  - [x] Servidor sobe limpo com `npcs.json` e `blocks.json` migrados
+  - [x] Servidor **falha na inicialização** se `currentBlock` ou qualquer `poiId` referenciar entidade inexistente, mostrando NPC e campo inválido
+  - [x] Exemplos funcionais: Tomas mantém `currentBlock = vila_sao_tome` e transita entre POIs do bloco conforme schedule; regras de Loneliness seguem D3 (POIs diferentes = separados; ambos `""` no mesmo bloco = juntos)
+  - [x] `admin_get_npc_full` e `admin_get_pois_in_block` retornam campos esperados
+  - [x] `go build` e `go vet` limpos
 
 ### 1.5 — Fofoca (requer 1.4 completo)
 
