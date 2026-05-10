@@ -42,7 +42,7 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 	// 2. COMANDOS DE CONSULTA / OOB (leem o mundo instantaneamente)
 	// Substitui o antigo comando: /npc <id>
 	// ==========================================
-	case "admin_get_npc":
+	case "admin_get_npc_full":
 		var payload struct {
 			ID string `json:"id"`
 		}
@@ -59,15 +59,83 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		}
 
 		npc, found := snapshot.GetNPCById(payload.ID)
-
 		if !found {
 			r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
 			return
 		}
 
-		r.notifier.Send("command", "admin_get_npc", npc)
+		type adminNpcScheduleActionDTO struct {
+			Activity  string `json:"activity"`
+			PoiId     string `json:"poiId"`
+			StartHour int    `json:"startHour"`
+			EndHour   int    `json:"endHour"`
+		}
+
+		type adminNpcNeedDTO struct {
+			Hunger     float64 `json:"hunger"`
+			Fatigue    float64 `json:"fatigue"`
+			Loneliness float64 `json:"loneliness"`
+		}
+
+		type adminNpcNeedWeightDTO struct {
+			Hunger     float64 `json:"hunger"`
+			Fatigue    float64 `json:"fatigue"`
+			Loneliness float64 `json:"loneliness"`
+			Schedule   float64 `json:"schedule"`
+		}
+
+		type adminNpcFullDTO struct {
+			ID              string                      `json:"id"`
+			Name            string                      `json:"name"`
+			Role            string                      `json:"role"`
+			CurrentBlock    string                      `json:"currentBlock"`
+			CurrentPoi      string                      `json:"currentPoi"`
+			CurrentActivity string                      `json:"currentActivity"`
+			Description     string                      `json:"description"`
+			Backstory       string                      `json:"backstory"`
+			HomePoi         string                      `json:"homePoi"`
+			EatingPoi       string                      `json:"eatingPoi"`
+			Needs           adminNpcNeedDTO             `json:"needs"`
+			NeedsWeight     adminNpcNeedWeightDTO       `json:"needsWeight"`
+			Schedule        []adminNpcScheduleActionDTO `json:"schedule"`
+		}
+
+		schedule := make([]adminNpcScheduleActionDTO, 0, len(npc.Schedule))
+		for _, action := range npc.Schedule {
+			schedule = append(schedule, adminNpcScheduleActionDTO{
+				Activity:  string(action.Activity),
+				PoiId:     action.PoiId,
+				StartHour: action.StartHour,
+				EndHour:   action.EndHour,
+			})
+		}
+
+		r.notifier.Send("command", "admin_get_npc_full", adminNpcFullDTO{
+			ID:              npc.Id,
+			Name:            npc.Name,
+			Role:            string(npc.Role),
+			CurrentBlock:    npc.CurrentBlock,
+			CurrentPoi:      npc.CurrentPoi,
+			CurrentActivity: string(npc.CurrentActivity),
+			Description:     npc.Description,
+			Backstory:       npc.Backstory,
+			HomePoi:         npc.HomePoi,
+			EatingPoi:       npc.EatingPoi,
+			Needs: adminNpcNeedDTO{
+				Hunger:     npc.Needs.Hunger,
+				Fatigue:    npc.Needs.Fatigue,
+				Loneliness: npc.Needs.Loneliness,
+			},
+			NeedsWeight: adminNpcNeedWeightDTO{
+				Hunger:     npc.NeedsWeight.Hunger,
+				Fatigue:    npc.NeedsWeight.Fatigue,
+				Loneliness: npc.NeedsWeight.Loneliness,
+				Schedule:   npc.NeedsWeight.Schedule,
+			},
+			Schedule: schedule,
+		})
 		if config.Log.CommandRouting {
-			slog.Debug("admin consultou NPC", "id", payload.ID)
+			slog.Debug("admin consultou NPC completo", "id", payload.ID)
 		}
 
 	// COMANDO GET SNAP

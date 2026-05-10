@@ -26,9 +26,15 @@ type Npc struct {
 	ActivityStartedAt time.Time        // Hora em que a atividade atual começou
 	NeedsWeight       NeedWeight       // Pesos para cada necessidade, usados na decisão de atividades
 	CurrentPoi        string           // Ponto de interesse onde o npc está atualmente
+	validPois         map[string]struct{}
 }
 
-func NewNpc(id string, name string, role Role, currentBlock string, description string, backstory string, schedule []ScheduleAction, homePoi string, eatingPoi string, needsWeight NeedWeight) *Npc {
+func NewNpc(id string, name string, role Role, currentBlock string, description string, backstory string, schedule []ScheduleAction, homePoi string, eatingPoi string, validPois []string, needsWeight NeedWeight) *Npc {
+	poiSet := make(map[string]struct{}, len(validPois))
+	for _, poiId := range validPois {
+		poiSet[poiId] = struct{}{}
+	}
+
 	return &Npc{
 		Id:              id,
 		Name:            name,
@@ -47,5 +53,15 @@ func NewNpc(id string, name string, role Role, currentBlock string, description 
 		EatingPoi:   eatingPoi,
 		NeedsWeight: needsWeight,
 		CurrentPoi:  "",
+		validPois:   poiSet,
 	}
+}
+
+func (npc *Npc) hasValidPoi(poiId string) bool {
+	if poiId == "" {
+		return true
+	}
+
+	_, exists := npc.validPois[poiId]
+	return exists
 }

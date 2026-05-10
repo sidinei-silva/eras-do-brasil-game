@@ -40,7 +40,7 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 
 	for _, npc := range m.npcs {
 		// Passo 1: decay sempre roda
-		npcsInZone := m.getNpcsInZone(npc.CurrentBlock, npc.Id)
+		npcsInZone := m.getNpcsInLocation(npc.CurrentBlock, npc.CurrentPoi, npc.Id)
 		hasCompany := len(npcsInZone) > 0
 
 		if config.Log.NPCNeeds {
@@ -56,6 +56,7 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 				"activity", npc.CurrentActivity,
 				"has_company", hasCompany,
 				"zone", npc.CurrentBlock,
+				"poi", npc.CurrentPoi,
 				"hunger", int(npc.Needs.Hunger),
 				"fatigue", int(npc.Needs.Fatigue),
 				"loneliness", int(npc.Needs.Loneliness),
@@ -147,7 +148,7 @@ func (m *Manager) computeDesiredActivity(npc *Npc, hour int) (Activity, string, 
 	const minActionableScore = 10.0
 
 	if maxScore < minActionableScore {
-		return ActivityIdle, npc.CurrentBlock, "none", maxScore
+		return ActivityIdle, npc.CurrentPoi, "none", maxScore
 	}
 
 	switch winner {
@@ -181,10 +182,10 @@ func (m *Manager) GetNpcById(id string) (*Npc, bool) {
 	return nil, false
 }
 
-func (m *Manager) getNpcsInZone(zone string, npcId string) []*Npc {
+func (m *Manager) getNpcsInLocation(blockId string, poi string, npcId string) []*Npc {
 	npcs := make([]*Npc, 0)
 	for _, npc := range m.npcs {
-		if npc.CurrentBlock == zone && npc.Id != npcId {
+		if npc.CurrentBlock == blockId && npc.CurrentPoi == poi && npc.Id != npcId {
 			npcs = append(npcs, npc)
 		}
 	}

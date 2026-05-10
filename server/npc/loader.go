@@ -42,6 +42,10 @@ type Data struct {
 
 func LoadNpcsFromFile() ([]*Npc, error) {
 	blocks, err := world.LoadBlocksFromFile()
+	if err != nil {
+		return nil, err
+	}
+
 	filePath := os.Getenv("NPCS_FILE")
 
 	if filePath == "" {
@@ -68,6 +72,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 	for _, npcData := range data.Npcs {
 
 		checkLocationsInNpcExists(&npcData, blocks)
+		validPois := blockPoisForNpc(blocks, npcData.CurrentBlock)
 
 		npc := NewNpc(
 			npcData.Id,
@@ -90,6 +95,7 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 			}(),
 			npcData.HomePoi,
 			npcData.EatingPoi,
+			validPois,
 			NeedWeight{
 				Hunger:     npcData.NeedsWeight.Hunger,
 				Fatigue:    npcData.NeedsWeight.Fatigue,
@@ -106,6 +112,16 @@ func LoadNpcsFromFile() ([]*Npc, error) {
 	return npcs, nil
 }
 
+func blockPoisForNpc(blocks []*world.Block, blockId string) []string {
+	for _, block := range blocks {
+		if block.Id == blockId {
+			return block.Pois
+		}
+	}
+
+	return nil
+}
+
 func checkLocationsInNpcExists(npc *TemplateDTO, blocks []*world.Block) {
 
 	// Verificar se CurrentBlock existe
@@ -117,8 +133,14 @@ func checkLocationsInNpcExists(npc *TemplateDTO, blocks []*world.Block) {
 
 	block, currentBlockExists := allBlocksIds[npc.CurrentBlock]
 	if !currentBlockExists {
-		slog.Error("Current block não encontrado para NPC", "npcId", npc.Id, "currentBlock", npc.CurrentBlock)
-		panic("Current block não encontrado para NPC")
+		slog.Error("Campo inválido ao carregar NPC",
+			"npcId", npc.Id,
+			"field", "currentBlock",
+			"invalidValue", npc.CurrentBlock,
+			"expectedBlock", npc.CurrentBlock,
+			"availableBlocks", blockIDsFromBlocks(blocks),
+		)
+		os.Exit(1)
 	}
 
 	allPois := make(map[string]bool)
@@ -128,22 +150,49 @@ func checkLocationsInNpcExists(npc *TemplateDTO, blocks []*world.Block) {
 
 	// Verificar se HomePoi existe
 	if _, exists := allPois[npc.HomePoi]; !exists {
-		slog.Error("Home POI não encontrado para NPC", "npcId", npc.Id, "homePoi", npc.HomePoi)
-		panic("Home POI não encontrado para NPC")
+		slog.Error("Campo inválido ao carregar NPC",
+			"npcId", npc.Id,
+			"field", "homePoi",
+			"invalidValue", npc.HomePoi,
+			"expectedBlock", block.Id,
+			"availablePois", block.Pois,
+		)
+		os.Exit(1)
 	}
 
 	// Verificar se EatingPoi existe
 	if _, exists := allPois[npc.EatingPoi]; !exists {
-		slog.Error("Eating POI não encontrado para NPC", "npcId", npc.Id, "eatingPoi", npc.EatingPoi)
-		panic("Eating POI não encontrado para NPC")
+		slog.Error("Campo inválido ao carregar NPC",
+			"npcId", npc.Id,
+			"field", "eatingPoi",
+			"invalidValue", npc.EatingPoi,
+			"expectedBlock", block.Id,
+			"availablePois", block.Pois,
+		)
+		os.Exit(1)
 	}
 
 	// Verificar se os pois da schedule existem
 	for _, action := range npc.Schedule {
 		if _, exists := allPois[action.PoiId]; !exists {
-			slog.Error("Schedule POI não encontrado para NPC", "npcId", npc.Id, "schedulePoi", action.PoiId)
-			panic("Schedule POI não encontrado para NPC")
+			slog.Error("Campo inválido ao carregar NPC",
+				"npcId", npc.Id,
+				"field", "schedule.poiId",
+				"invalidValue", action.PoiId,
+				"expectedBlock", block.Id,
+				"availablePois", block.Pois,
+			)
+			os.Exit(1)
 		}
 	}
 
+}
+
+func blockIDsFromBlocks(blocks []*world.Block) []string {
+	ids := make([]string, 0, len(blocks))
+	for _, block := range blocks {
+		ids = append(ids, block.Id)
+	}
+
+	return ids
 }

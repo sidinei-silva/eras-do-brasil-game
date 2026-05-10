@@ -1,6 +1,8 @@
 package npc
 
 import (
+	"log/slog"
+
 	"github.com/sidinei-silva/eras-do-brasil-game/server/world"
 )
 
@@ -27,8 +29,12 @@ func (npc *Npc) TransitionTo(activity Activity, poiId string, gameTime world.Gam
 		return
 	}
 
+	if !npc.hasValidPoi(poiId) {
+		slog.Error("POI inválido para NPC", "npcId", npc.Id, "currentActivity", activity, "invalidPoi", poiId, "currentPoi", npc.CurrentPoi)
+		return
+	}
+
 	npc.CurrentActivity = activity
 	npc.CurrentPoi = poiId
 	npc.ActivityStartedAt = gameTime.Time
-
 }
