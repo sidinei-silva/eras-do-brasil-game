@@ -27,6 +27,8 @@ type Npc struct {
 	NeedsWeight       NeedWeight       // Pesos para cada necessidade, usados na decisão de atividades
 	CurrentPoi        string           // Ponto de interesse onde o npc está atualmente
 	validPois         map[string]struct{}
+	KnowledgeBase     []Knowledge          // Base de conhecimento do NPC, contendo informações que ele pode compartilhar ou usar para tomar decisões
+	LastGossipedWith  map[string]time.Time // Mapa para rastrear a última vez que o NPC conversou com outros NPCs ou jogadores, para evitar repetição excessiva de fofocas
 }
 
 func NewNpc(id string, name string, role Role, currentBlock string, description string, backstory string, schedule []ScheduleAction, homePoi string, eatingPoi string, validPois []string, needsWeight NeedWeight) *Npc {
@@ -49,11 +51,13 @@ func NewNpc(id string, name string, role Role, currentBlock string, description 
 			Fatigue:    0,
 			Loneliness: 0,
 		},
-		HomePoi:     homePoi,
-		EatingPoi:   eatingPoi,
-		NeedsWeight: needsWeight,
-		CurrentPoi:  "",
-		validPois:   poiSet,
+		HomePoi:          homePoi,
+		EatingPoi:        eatingPoi,
+		NeedsWeight:      needsWeight,
+		CurrentPoi:       "",
+		validPois:        poiSet,
+		KnowledgeBase:    []Knowledge{},
+		LastGossipedWith: make(map[string]time.Time),
 	}
 }
 
@@ -64,4 +68,28 @@ func (npc *Npc) hasValidPoi(poiId string) bool {
 
 	_, exists := npc.validPois[poiId]
 	return exists
+}
+
+// addOrUpdateKnowledge adiciona um novo conhecimento à base de conhecimento do NPC ou atualiza um conhecimento existente se já houver um correspondente
+func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge) {
+	for i, k := range npc.KnowledgeBase {
+		if k.Type == newKnowledge.Type && k.EntityId == newKnowledge.EntityId && k.BlockId == newKnowledge.BlockId && k.PoiId == newKnowledge.PoiId {
+			// Atualiza o conhecimento existente
+			npc.KnowledgeBase[i].LastSeenAt = time.Now()
+			npc.KnowledgeBase[i].SeenCount++
+			return
+		}
+	}
+	// Adiciona novo conhecimento
+	npc.KnowledgeBase = append(npc.KnowledgeBase, newKnowledge)
+}
+
+// getKnowledge retorna o conhecimento correspondente ao tipo, entidade, bloco e poi especificados, se existir
+func (npc *Npc) getKnowledge(knowledgeType KnowledgeType, entityId, blockId, poiId string) (Knowledge, bool) {
+	for _, k := range npc.KnowledgeBase {
+		if k.Type == knowledgeType && k.EntityId == entityId && k.BlockId == blockId && k.PoiId == poiId {
+			return k, true
+		}
+	}
+	return Knowledge{}, false
 }

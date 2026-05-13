@@ -19,10 +19,10 @@ type Knowledge struct {
 	Important   bool      // isenção de expiração e FIFO
 }
 
-func NewKnowledgeAvistamentoNPC(entityId, blockId, poiId, source string) Knowledge {
+func NewKnowledge(knowledgeType KnowledgeType, entityId, blockId, poiId, source string) Knowledge {
 	now := time.Now()
 	return Knowledge{
-		Type:        KnowledgeAvistamentoNPC,
+		Type:        knowledgeType,
 		EntityId:    entityId,
 		BlockId:     blockId,
 		PoiId:       poiId,
