@@ -1,0 +1,9 @@
+{
+    "expirationHours": {
+        "AVISTAMENTO_NPC": 48
+    },
+    "gossipCooldownHours": 6,
+    "maxKnowledgeBaseSize": 100,
+    "gossipMinExchangePerEvent": 1,
+    "gossipMaxExchangePerEvent": 2
+}

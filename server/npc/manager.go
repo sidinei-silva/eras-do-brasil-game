@@ -13,6 +13,13 @@ type Manager struct {
 }
 
 func NewManager() (*Manager, error) {
+	_, err := LoadKnowledgeConfig()
+
+	if err != nil {
+		slog.Error("Erro ao carregar configuração de conhecimento", "err", err)
+		return nil, err
+	}
+
 	npcs, err := LoadNpcsFromFile()
 	if err != nil {
 		slog.Error("Erro ao carregar NPCs", "err", err)
