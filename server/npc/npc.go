@@ -2,6 +2,7 @@ package npc
 
 import (
 	"log/slog"
+	"math/rand"
 	"time"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
@@ -128,4 +129,108 @@ func (npc *Npc) removeExpiredKnowledge(gameTime time.Time, expirationHours map[K
 		filtered = append(filtered, k)
 	}
 	npc.KnowledgeBase = filtered
+}
+
+func (npc *Npc) eligibleKnowledgeForGossip(receptorId string) []Knowledge {
+	eligible := make([]Knowledge, 0, len(npc.KnowledgeBase))
+	for _, k := range npc.KnowledgeBase {
+		if k.EntityId != receptorId && k.Source != receptorId {
+			eligible = append(eligible, k)
+		}
+	}
+	return eligible
+}
+
+func pickRandomKnowledge(entries []Knowledge, minCount, maxCount int) []Knowledge {
+	if len(entries) == 0 {
+		return nil
+	}
+	if minCount < 1 {
+		minCount = 1
+	}
+	if maxCount < minCount {
+		maxCount = minCount
+	}
+
+	count := minCount
+	if maxCount > minCount {
+		count = minCount + rand.Intn(maxCount-minCount+1)
+	}
+	if count > len(entries) {
+		count = len(entries)
+	}
+
+	perm := rand.Perm(len(entries))
+	selected := make([]Knowledge, 0, count)
+	for i := 0; i < count; i++ {
+		selected = append(selected, entries[perm[i]])
+	}
+	return selected
+}
+
+func mergeGossipedKnowledge(receptor *Npc, source *Npc, knowledge Knowledge, gameTime time.Time) {
+	if existingK, found := receptor.getKnowledge(knowledge.Type, knowledge.EntityId, knowledge.BlockId, knowledge.PoiId); found {
+		if knowledge.LastSeenAt.After(existingK.LastSeenAt) {
+			for i, k := range receptor.KnowledgeBase {
+				if k.Type == knowledge.Type && k.EntityId == knowledge.EntityId && k.BlockId == knowledge.BlockId && k.PoiId == knowledge.PoiId {
+					receptor.KnowledgeBase[i].LastSeenAt = knowledge.LastSeenAt
+					if config.Log.NPCKnowledge {
+						slog.Debug("Conhecimento atualizado via fofoca",
+							"receptor_id", receptor.Id,
+							"emissor_id", source.Id,
+							"knowledge_entity_id", knowledge.EntityId,
+							"last_seen_at", knowledge.LastSeenAt,
+						)
+					}
+					break
+				}
+			}
+		}
+		return
+	}
+
+	newK := Knowledge{
+		Type:        knowledge.Type,
+		EntityId:    knowledge.EntityId,
+		BlockId:     knowledge.BlockId,
+		PoiId:       knowledge.PoiId,
+		FirstSeenAt: knowledge.FirstSeenAt,
+		LastSeenAt:  knowledge.LastSeenAt,
+		SeenCount:   knowledge.SeenCount,
+		LearnedAt:   gameTime,
+		Source:      source.Id,
+		Important:   knowledge.Important,
+	}
+	receptor.KnowledgeBase = append(receptor.KnowledgeBase, newK)
+	if config.Log.NPCKnowledge {
+		slog.Debug("Conhecimento adicionado via fofoca",
+			"receptor_id", receptor.Id,
+			"emissor_id", source.Id,
+			"knowledge_entity_id", newK.EntityId,
+			"learned_at", newK.LearnedAt,
+		)
+	}
+}
+
+// exchangeKnowledgeWith executa a troca bidirecional em uma única passada.
+// Isso evita que o par seja reprocessado com KB já mutada pelo primeiro lado.
+func (npc *Npc) exchangeKnowledgeWith(otherNpc *Npc, gameTime time.Time, knowledgeConfig KnowledgeConfig) bool {
+	firstSide := pickRandomKnowledge(npc.eligibleKnowledgeForGossip(otherNpc.Id), knowledgeConfig.GossipMinExchangePerEvent, knowledgeConfig.GossipMaxExchangePerEvent)
+	secondSide := pickRandomKnowledge(otherNpc.eligibleKnowledgeForGossip(npc.Id), knowledgeConfig.GossipMinExchangePerEvent, knowledgeConfig.GossipMaxExchangePerEvent)
+
+	if len(firstSide) == 0 && len(secondSide) == 0 {
+		return false
+	}
+
+	for _, knowledge := range firstSide {
+		mergeGossipedKnowledge(otherNpc, npc, knowledge, gameTime)
+	}
+	for _, knowledge := range secondSide {
+		mergeGossipedKnowledge(npc, otherNpc, knowledge, gameTime)
+	}
+
+	npc.LastGossipedWith[otherNpc.Id] = gameTime
+	otherNpc.LastGossipedWith[npc.Id] = gameTime
+
+	return true
 }

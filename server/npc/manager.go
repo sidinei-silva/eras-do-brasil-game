@@ -45,13 +45,15 @@ func NewManager() (*Manager, error) {
 //  4. Garante invariantes (clamp)
 func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duration) {
 	tickHours := tickDuration.Hours()
+	npcsInZoneByNPC := make(map[string][]*Npc, len(m.npcs))
 
+	// Fase 1: atualizar estado individual e auto-gerar avistamentos.
 	for _, npc := range m.npcs {
-		// Passo 1: decay sempre roda
 		npcsInZone := m.getNpcsInLocation(npc.CurrentBlock, npc.CurrentPoi, npc.Id)
+		npcsInZoneByNPC[npc.Id] = npcsInZone
 
-		knowledgeConfig := m.knowledgeConfig
-		npc.removeExpiredKnowledge(gameTime.Time, knowledgeConfig.ExpirationHours)
+		npc.removeExpiredKnowledge(gameTime.Time, m.knowledgeConfig.ExpirationHours)
+
 		for _, otherNpc := range npcsInZone {
 			knowledge := NewKnowledgeAvistamentoNPC(otherNpc.Id, otherNpc.CurrentBlock, otherNpc.CurrentPoi, "direct", gameTime.Time)
 			npc.addOrUpdateKnowledge(knowledge, gameTime.Time)
@@ -122,6 +124,43 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 			)
 		}
 	}
+
+	// Fase 2: fofoca. Usa o cache da primeira passada para não recalcular vizinhança.
+	processedPairs := make(map[string]struct{})
+	for _, npc := range m.npcs {
+		npcsInZone := npcsInZoneByNPC[npc.Id]
+		for _, otherNpc := range npcsInZone {
+			pairKey := getPairKey(npc.Id, otherNpc.Id)
+			if _, exists := processedPairs[pairKey]; exists {
+				continue
+			}
+			processedPairs[pairKey] = struct{}{}
+
+			lastGossipTime, hasGossiped := npc.LastGossipedWith[otherNpc.Id]
+			if hasGossiped {
+				cooldownDuration := time.Duration(m.knowledgeConfig.GossipCooldownHours) * time.Hour
+				if gameTime.Time.Sub(lastGossipTime) < cooldownDuration {
+					continue
+				}
+			}
+
+			if !npc.exchangeKnowledgeWith(otherNpc, gameTime.Time, m.knowledgeConfig) {
+				continue
+			}
+
+			if config.Log.NPCKnowledge {
+				slog.Debug("Fofoca executada entre NPCs",
+					"npc1_id", npc.Id,
+					"npc1_name", npc.Name,
+					"npc2_id", otherNpc.Id,
+					"npc2_name", otherNpc.Name,
+					"block", npc.CurrentBlock,
+					"poi", npc.CurrentPoi,
+				)
+			}
+		}
+	}
+
 }
 
 // decideNextActivity é o método do Manager que escolhe qual atividade
