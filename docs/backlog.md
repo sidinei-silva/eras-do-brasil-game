@@ -80,15 +80,64 @@
   - [x] `admin_get_npc_full` e `admin_get_pois_in_block` retornam campos esperados
   - [x] `go build` e `go vet` limpos
 
-### 1.5 — Fofoca (requer 1.4 completo)
+### 1.5 — Fofoca / KnowledgeBase (requer 1.4 completo) **PRÓXIMO**
 
-- [ ] `knowledgeBase` do NPC: lista de `Knowledge{tipo, id, local, visto_em}`
-- [ ] Evento "viu X" popula knowledgeBase quando NPC chega num bloco com recurso/mob/outro NPC
-- [ ] Quando 2+ NPCs no mesmo bloco por N ticks: trocam 1-2 itens de knowledgeBase
-- [ ] Esquecimento: entradas expiram após prazo por tipo (recurso 2 dias, rotina 5 dias, etc.)
-- [ ] Admin pode consultar knowledgeBase de um NPC
+> **Refinamento:** [refinements/1.5-fofoca-knowledge-base.md](product/refinements/1.5-fofoca-knowledge-base.md)
 
-### 1.6 — Ferramentas de dev/admin
+- Escopo: substrato funcional de KnowledgeBase com fofoca entre os 3 residentes da Vila. Schema único enriquecido (`SeenCount + FirstSeenAt + LastSeenAt + LearnedAt + Source + Important`). Auto-geração só para `AVISTAMENTO_NPC` (único tipo automático nesta fase).
+- Versão honesta do escopo original — itinerantes, StoryManager e outros tipos de Knowledge ficam adiados conscientemente para 1.6+.
+- Entradas:
+  - [ ] Struct `Knowledge` com 10 campos; enum `KnowledgeType` com único valor `AVISTAMENTO_NPC`
+  - [ ] `Npc` ganha `KnowledgeBase []Knowledge` + `LastGossipedWith map[string]time.Time`
+  - [ ] `knowledge_config.json` com expiração per-tipo, cooldown de fofoca, tamanho máximo, quantidade trocada por evento
+  - [ ] Auto-geração: quando 2+ NPCs no mesmo `(Block, Poi)`, cada um popula entry sobre o outro; dedup por chave `(Type, EntityId, BlockId, PoiId)` incrementa `SeenCount` ao invés de duplicar
+  - [ ] Fofoca: ≥2 NPCs co-localizados + cooldown por par expirado → troca 1-2 entries aleatórias; anti-loop via filtro de `Source` e `EntityId`
+  - [ ] Expiração: lazy nos getters + sweep no início do `ProcessTick`; entries `Important=true` isentas
+  - [ ] FIFO de tamanho: descarta entry com `LearnedAt` mais antigo se exceder limite; entries `Important` isentas
+  - [ ] Snapshot inclui cópia profunda da KB
+  - [ ] Comandos admin: `admin_inject_knowledge` (strict validation), `admin_get_npc_knowledge`, `admin_get_npc_full` ganha `knowledgeBaseSize`
+  - [ ] Flag de log `NPCKnowledge`
+- Exceções (o que NÃO entra — débitos conscientes):
+  - Tipos `LOCAL`, `RECURSO`, `ENTIDADE`, `EVENTO_IMPORTANTE` auto-gerados (só `AVISTAMENTO_NPC`; outros entram com seus respectivos geradores em 1.6+ / Fase 2+)
+  - Itinerantes / NPCs inter-bloco (1.6)
+  - StoryManager (Fase 2 ou 3)
+  - Diálogo do jogador / acesso da KB via NPC (Fase 3+)
+  - Sistema de Afinidade / Relacionamentos NPC↔NPC (Fase 3+)
+  - Inferência de rotina (`ROTINA_NPC` como tipo derivado) (Fase 3+ ou conforme demanda)
+  - Compartilhamento de `SeenCount` via fofoca (decisão 3.9 do refinamento)
+  - Persistência da KB entre reinícios
+  - Traits que modificam expiração / decay (Fase 4+)
+  - Separação visto/conhecimento como duas estruturas (refatorável quando demanda surgir)
+- Critérios de aceite resumidos:
+  - [ ] Servidor sobe com `knowledge_config.json` válido; falha com mensagem clara se inválido
+  - [ ] Após 1 dia de jogo: Tomas e Naila têm entries um sobre o outro (no mínimo via almoço/jantar na taverna); re-encontros incrementam `SeenCount` sem duplicar
+  - [ ] Fofoca propaga entries respeitando cooldown e anti-loop (`Source != receptor`)
+  - [ ] Sweep remove expiradas por `LearnedAt`; `Important=true` sobrevive
+  - [ ] Admin: `admin_inject_knowledge` strict, `admin_get_npc_knowledge` retorna entries ativas
+  - [ ] `go build` e `go vet` limpos
+
+### 1.6 — Itinerantes (NPCs inter-bloco)
+
+> **Refinamento:** _a redigir antes de iniciar_
+
+- Escopo: introduzir NPCs que mudam de `CurrentBlock` ao longo do dia (caçadores, mercadores, guardas em patrulha). Refactor para separar `HomeBlock` de `CurrentBlock`. Estado de trânsito (`walking`) entre blocos com tempo configurável. Propagação natural de KB entre vilas via itinerantes que carregam fofoca de um lado pro outro.
+- Entradas (rascunho — refinar):
+  - [ ] `Npc` ganha `HomeBlock` separado de `CurrentBlock`
+  - [ ] Activity nova: `ActivityTravelingBetweenBlocks` com tempo configurável
+  - [ ] Schedule pode incluir POIs de blocos diferentes (validação cruzada amplia o que a 1.4 faz)
+  - [ ] Pelo menos 1 NPC itinerante novo nos `npcs.json` (ex: caçador que sai pra floresta de manhã, volta à noite)
+  - [ ] Loneliness e fofoca já funcionam (1.5) — o ganho é que itinerantes naturalmente propagam KB entre blocos
+  - [ ] Persistência de POI atual? (decidir no refinamento — provavelmente ainda não)
+- Exceções:
+  - Pathfinding intra-bloco (mapa local, Camada 3 — T2+)
+  - Travel cancelado por evento (entrará junto com StoryManager)
+- Critérios de aceite resumidos:
+  - [ ] Caçador novo sai da Vila pela manhã, chega na Floresta do Norte após N min de jogo, volta à tarde
+  - [ ] KB do caçador acumula entries em ambos os blocos
+  - [ ] Encontro do caçador com Tomas/Ricardo/Naila na Vila propaga conhecimento da Floresta
+  - [ ] `go build` e `go vet` limpos
+
+### 1.7 — Ferramentas de dev/admin
 
 - [ ] Listar NPCs via comando admin (já parcialmente implementado)
 - [ ] Inspecionar NPC individual (stats, needs, atividade, zona, knowledgeBase)
