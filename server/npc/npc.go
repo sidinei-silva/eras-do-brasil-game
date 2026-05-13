@@ -1,6 +1,11 @@
 package npc
 
-import "time"
+import (
+	"log/slog"
+	"time"
+
+	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
+)
 
 type Role string
 
@@ -71,17 +76,27 @@ func (npc *Npc) hasValidPoi(poiId string) bool {
 }
 
 // addOrUpdateKnowledge adiciona um novo conhecimento à base de conhecimento do NPC ou atualiza um conhecimento existente se já houver um correspondente
-func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge) {
+func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge, gameTime time.Time) {
+	// Verifica se já existe um conhecimento correspondente na base de conhecimento
+	if config.Log.NPCKnowledge {
+		slog.Debug("Verificando se conhecimento existe no NPC", "npc_id", npc.Id, "knowledge", newKnowledge)
+	}
 	for i, k := range npc.KnowledgeBase {
 		if k.Type == newKnowledge.Type && k.EntityId == newKnowledge.EntityId && k.BlockId == newKnowledge.BlockId && k.PoiId == newKnowledge.PoiId {
 			// Atualiza o conhecimento existente
-			npc.KnowledgeBase[i].LastSeenAt = time.Now()
+			npc.KnowledgeBase[i].LastSeenAt = gameTime
 			npc.KnowledgeBase[i].SeenCount++
+			if config.Log.NPCKnowledge {
+				slog.Debug("Conhecimento atualizado no NPC", "npc_id", npc.Id, "knowledge", npc.KnowledgeBase[i])
+			}
 			return
 		}
 	}
 	// Adiciona novo conhecimento
 	npc.KnowledgeBase = append(npc.KnowledgeBase, newKnowledge)
+	if config.Log.NPCKnowledge {
+		slog.Debug("Conhecimento adicionado ao NPC", "npc_id", npc.Id, "knowledge", newKnowledge)
+	}
 }
 
 // getKnowledge retorna o conhecimento correspondente ao tipo, entidade, bloco e poi especificados, se existir
@@ -92,4 +107,25 @@ func (npc *Npc) getKnowledge(knowledgeType KnowledgeType, entityId, blockId, poi
 		}
 	}
 	return Knowledge{}, false
+}
+
+func (npc *Npc) removeExpiredKnowledge(gameTime time.Time, expirationHours map[KnowledgeType]int) {
+	filtered := make([]Knowledge, 0, len(npc.KnowledgeBase))
+	for _, k := range npc.KnowledgeBase {
+		expiration, exists := expirationHours[k.Type]
+		if !exists {
+			slog.Warn("Sem config de expiração", "knowledge_type", k.Type)
+			filtered = append(filtered, k) // preserva (não sei se devia, decisão)
+			continue
+		}
+		expired := gameTime.Sub(k.LastSeenAt) > time.Duration(expiration)*time.Hour && !k.Important
+		if expired {
+			if config.Log.NPCKnowledge {
+				slog.Debug("Conhecimento expirado removido", "npc_id", npc.Id, "knowledge", k)
+			}
+			continue
+		}
+		filtered = append(filtered, k)
+	}
+	npc.KnowledgeBase = filtered
 }

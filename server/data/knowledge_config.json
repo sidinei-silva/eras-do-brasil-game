@@ -1,6 +1,6 @@
 {
     "expirationHours": {
-        "AVISTAMENTO_NPC": 48
+        "AVISTAMENTO_NPC": 1
     },
     "gossipCooldownHours": 6,
     "maxKnowledgeBaseSize": 100,

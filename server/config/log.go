@@ -38,6 +38,10 @@ type LogConfig struct {
 	// NPCBehavior exibe decisões de comportamento dos NPCs (transições de atividade, etc.).
 	// Env: LOG_NPC_BEHAVIOR (padrão: false)
 	NPCBehavior bool
+
+	// NPCKnowledge exibe detalhes sobre a base de conhecimento dos NPCs e quando ela é atualizada.
+	// Env: LOG_NPC_KNOWLEDGE (padrão: false)
+	NPCKnowledge bool // Exibe detalhes sobre a base de conhecimento dos NPCs e quando ela é atualizada. Env: LOG_NPC_KNOWLEDGE (padrão: false)
 }
 
 // Log é a configuração global de log. Inicializada uma vez na startup do processo.
@@ -49,6 +53,7 @@ var Log = &LogConfig{
 	GameLoopTicks:  getEnvBool("LOG_GAME_LOOP_TICKS", false),
 	WorldLoading:   getEnvBool("LOG_WORLD_LOADING", false),
 	NPCBehavior:    getEnvBool("LOG_NPC_BEHAVIOR", false),
+	NPCKnowledge:   getEnvBool("LOG_NPC_KNOWLEDGE", false),
 }
 
 func getEnv(key, fallback string) string {

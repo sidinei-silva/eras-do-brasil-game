@@ -9,11 +9,12 @@ import (
 )
 
 type Manager struct {
-	npcs []*Npc
+	npcs            []*Npc
+	knowledgeConfig KnowledgeConfig
 }
 
 func NewManager() (*Manager, error) {
-	_, err := LoadKnowledgeConfig()
+	knowledgeConfig, err := LoadKnowledgeConfig()
 
 	if err != nil {
 		slog.Error("Erro ao carregar configuração de conhecimento", "err", err)
@@ -32,7 +33,7 @@ func NewManager() (*Manager, error) {
 		}
 	}
 
-	return &Manager{npcs: npcs}, nil
+	return &Manager{npcs: npcs, knowledgeConfig: knowledgeConfig}, nil
 }
 
 // ProcessTick é o coração do comportamento dos NPCs. É chamado pelo
@@ -48,6 +49,14 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 	for _, npc := range m.npcs {
 		// Passo 1: decay sempre roda
 		npcsInZone := m.getNpcsInLocation(npc.CurrentBlock, npc.CurrentPoi, npc.Id)
+
+		knowledgeConfig := m.knowledgeConfig
+		npc.removeExpiredKnowledge(gameTime.Time, knowledgeConfig.ExpirationHours)
+		for _, otherNpc := range npcsInZone {
+			knowledge := NewKnowledgeAvistamentoNPC(otherNpc.Id, otherNpc.CurrentBlock, otherNpc.CurrentPoi, "direct", gameTime.Time)
+			npc.addOrUpdateKnowledge(knowledge, gameTime.Time)
+		}
+
 		hasCompany := len(npcsInZone) > 0
 
 		if config.Log.NPCNeeds {
