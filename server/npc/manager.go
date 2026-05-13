@@ -47,89 +47,91 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 	tickHours := tickDuration.Hours()
 	npcsInZoneByNPC := make(map[string][]*Npc, len(m.npcs))
 
-	// Fase 1: atualizar estado individual e auto-gerar avistamentos.
 	for _, npc := range m.npcs {
 		npcsInZone := m.getNpcsInLocation(npc.CurrentBlock, npc.CurrentPoi, npc.Id)
 		npcsInZoneByNPC[npc.Id] = npcsInZone
-
-		npc.removeExpiredKnowledge(gameTime.Time, m.knowledgeConfig.ExpirationHours)
-
-		for _, otherNpc := range npcsInZone {
-			knowledge := NewKnowledgeAvistamentoNPC(otherNpc.Id, otherNpc.CurrentBlock, otherNpc.CurrentPoi, "direct", gameTime.Time)
-			npc.addOrUpdateKnowledge(knowledge, gameTime.Time)
-		}
-
-		hasCompany := len(npcsInZone) > 0
-
-		if config.Log.NPCNeeds {
-			hour := gameTime.Time.Hour()
-			scores := npc.CalculateScores(hour)
-			ids := make([]string, 0, len(npcsInZone))
-			for _, n := range npcsInZone {
-				ids = append(ids, n.Id)
-			}
-			slog.Debug("npc needs antes do decay",
-				"id", npc.Id,
-				"npc", npc.Name,
-				"activity", npc.CurrentActivity,
-				"has_company", hasCompany,
-				"zone", npc.CurrentBlock,
-				"poi", npc.CurrentPoi,
-				"hunger", int(npc.Needs.Hunger),
-				"fatigue", int(npc.Needs.Fatigue),
-				"loneliness", int(npc.Needs.Loneliness),
-				"score_hunger", scores["Hunger"],
-				"score_fatigue", scores["Fatigue"],
-				"score_schedule", scores["Schedule"],
-				"npcs_na_zona", ids,
-			)
-		}
-
-		npc.ApplyDecay(tickHours, hasCompany)
-
-		// Passo 2 e 3: lógica de transição de atividade
-		if npc.IsDiscreteActivity() {
-			if npc.IsActivityComplete(gameTime) {
-				npc.ApplyActivityEffects()
-				if config.Log.NPCBehavior {
-					slog.Info("npc atividade concluída",
-						"id", npc.Id,
-						"npc", npc.Name,
-						"activity", npc.CurrentActivity,
-						"hunger", int(npc.Needs.Hunger),
-						"fatigue", int(npc.Needs.Fatigue),
-						"loneliness", int(npc.Needs.Loneliness),
-					)
-				}
-				m.decideNextActivity(npc, gameTime)
-			}
-			// Se não terminou, segue na atividade
-		} else {
-			// Atividades contínuas podem ser revisitadas a cada tick
-			m.decideNextActivity(npc, gameTime)
-		}
-
-		// Passo 4: invariantes
-		npc.ClampNeeds()
-
-		if config.Log.NPCNeeds {
-			slog.Debug("npc needs após tick",
-				"id", npc.Id,
-				"npc", npc.Name,
-				"activity", npc.CurrentActivity,
-				"zone", npc.CurrentBlock,
-				"hunger", int(npc.Needs.Hunger),
-				"fatigue", int(npc.Needs.Fatigue),
-				"loneliness", int(npc.Needs.Loneliness),
-			)
-		}
+		m.tickNpcKnowledge(npc, gameTime, npcsInZone)
+		m.tickNpcBehavior(npc, gameTime, tickHours, npcsInZone)
 	}
 
-	// Fase 2: fofoca. Usa o cache da primeira passada para não recalcular vizinhança.
+	m.tickGossip(gameTime, npcsInZoneByNPC)
+}
+
+func (m *Manager) tickNpcKnowledge(npc *Npc, gameTime world.GameTime, npcsInZone []*Npc) {
+	npc.removeExpiredKnowledge(gameTime.Time, m.knowledgeConfig.ExpirationHours)
+	for _, otherNpc := range npcsInZone {
+		knowledge := NewKnowledgeAvistamentoNPC(otherNpc.Id, otherNpc.CurrentBlock, otherNpc.CurrentPoi, "direct", gameTime.Time)
+		npc.addOrUpdateKnowledge(knowledge, gameTime.Time)
+	}
+}
+
+func (m *Manager) tickNpcBehavior(npc *Npc, gameTime world.GameTime, tickHours float64, npcsInZone []*Npc) {
+	hasCompany := len(npcsInZone) > 0
+
+	if config.Log.NPCNeeds {
+		hour := gameTime.Time.Hour()
+		scores := npc.CalculateScores(hour)
+		ids := make([]string, 0, len(npcsInZone))
+		for _, n := range npcsInZone {
+			ids = append(ids, n.Id)
+		}
+		slog.Debug("npc needs antes do decay",
+			"id", npc.Id,
+			"npc", npc.Name,
+			"activity", npc.CurrentActivity,
+			"has_company", hasCompany,
+			"zone", npc.CurrentBlock,
+			"poi", npc.CurrentPoi,
+			"hunger", int(npc.Needs.Hunger),
+			"fatigue", int(npc.Needs.Fatigue),
+			"loneliness", int(npc.Needs.Loneliness),
+			"score_hunger", scores["Hunger"],
+			"score_fatigue", scores["Fatigue"],
+			"score_schedule", scores["Schedule"],
+			"npcs_na_zona", ids,
+		)
+	}
+
+	npc.ApplyDecay(tickHours, hasCompany)
+
+	if npc.IsDiscreteActivity() {
+		if npc.IsActivityComplete(gameTime) {
+			npc.ApplyActivityEffects()
+			if config.Log.NPCBehavior {
+				slog.Info("npc atividade concluída",
+					"id", npc.Id,
+					"npc", npc.Name,
+					"activity", npc.CurrentActivity,
+					"hunger", int(npc.Needs.Hunger),
+					"fatigue", int(npc.Needs.Fatigue),
+					"loneliness", int(npc.Needs.Loneliness),
+				)
+			}
+			m.decideNextActivity(npc, gameTime)
+		}
+	} else {
+		m.decideNextActivity(npc, gameTime)
+	}
+
+	npc.ClampNeeds()
+
+	if config.Log.NPCNeeds {
+		slog.Debug("npc needs após tick",
+			"id", npc.Id,
+			"npc", npc.Name,
+			"activity", npc.CurrentActivity,
+			"zone", npc.CurrentBlock,
+			"hunger", int(npc.Needs.Hunger),
+			"fatigue", int(npc.Needs.Fatigue),
+			"loneliness", int(npc.Needs.Loneliness),
+		)
+	}
+}
+
+func (m *Manager) tickGossip(gameTime world.GameTime, npcsInZoneByNPC map[string][]*Npc) {
 	processedPairs := make(map[string]struct{})
 	for _, npc := range m.npcs {
-		npcsInZone := npcsInZoneByNPC[npc.Id]
-		for _, otherNpc := range npcsInZone {
+		for _, otherNpc := range npcsInZoneByNPC[npc.Id] {
 			pairKey := getPairKey(npc.Id, otherNpc.Id)
 			if _, exists := processedPairs[pairKey]; exists {
 				continue
@@ -160,7 +162,6 @@ func (m *Manager) ProcessTick(gameTime world.GameTime, tickDuration time.Duratio
 			}
 		}
 	}
-
 }
 
 // decideNextActivity é o método do Manager que escolhe qual atividade

@@ -27,7 +27,6 @@ func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier, snapManager
 
 // Route é chamado pelo readPump da sessão admin
 func (r *AdminRouter) Route(cmd PlayerCommand) {
-	// cmd.Message.Type define a ação solicitada pelo admin.
 	switch cmd.Message.Type {
 
 	// ==========================================
@@ -43,171 +42,13 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 	// Substitui o antigo comando: /npc <id>
 	// ==========================================
 	case "admin_get_npc_full":
-		var payload struct {
-			ID string `json:"id"`
-		}
-
-		if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
-			return
-		}
-
-		snapshot := r.snapManager.GetSnapshot()
-		if snapshot == nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
-			return
-		}
-
-		npc, found := snapshot.GetNPCById(payload.ID)
-		if !found {
-			r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
-			return
-		}
-
-		type adminNpcScheduleActionDTO struct {
-			Activity  string `json:"activity"`
-			PoiId     string `json:"poiId"`
-			StartHour int    `json:"startHour"`
-			EndHour   int    `json:"endHour"`
-		}
-
-		type adminNpcNeedDTO struct {
-			Hunger     float64 `json:"hunger"`
-			Fatigue    float64 `json:"fatigue"`
-			Loneliness float64 `json:"loneliness"`
-		}
-
-		type adminNpcNeedWeightDTO struct {
-			Hunger     float64 `json:"hunger"`
-			Fatigue    float64 `json:"fatigue"`
-			Loneliness float64 `json:"loneliness"`
-			Schedule   float64 `json:"schedule"`
-		}
-
-		type adminNpcFullDTO struct {
-			ID              string                      `json:"id"`
-			Name            string                      `json:"name"`
-			Role            string                      `json:"role"`
-			CurrentBlock    string                      `json:"currentBlock"`
-			CurrentPoi      string                      `json:"currentPoi"`
-			CurrentActivity string                      `json:"currentActivity"`
-			Description     string                      `json:"description"`
-			Backstory       string                      `json:"backstory"`
-			HomePoi         string                      `json:"homePoi"`
-			EatingPoi       string                      `json:"eatingPoi"`
-			Needs           adminNpcNeedDTO             `json:"needs"`
-			NeedsWeight     adminNpcNeedWeightDTO       `json:"needsWeight"`
-			Schedule        []adminNpcScheduleActionDTO `json:"schedule"`
-		}
-
-		schedule := make([]adminNpcScheduleActionDTO, 0, len(npc.Schedule))
-		for _, action := range npc.Schedule {
-			schedule = append(schedule, adminNpcScheduleActionDTO{
-				Activity:  string(action.Activity),
-				PoiId:     action.PoiId,
-				StartHour: action.StartHour,
-				EndHour:   action.EndHour,
-			})
-		}
-
-		r.notifier.Send("command", "admin_get_npc_full", adminNpcFullDTO{
-			ID:              npc.Id,
-			Name:            npc.Name,
-			Role:            string(npc.Role),
-			CurrentBlock:    npc.CurrentBlock,
-			CurrentPoi:      npc.CurrentPoi,
-			CurrentActivity: string(npc.CurrentActivity),
-			Description:     npc.Description,
-			Backstory:       npc.Backstory,
-			HomePoi:         npc.HomePoi,
-			EatingPoi:       npc.EatingPoi,
-			Needs: adminNpcNeedDTO{
-				Hunger:     npc.Needs.Hunger,
-				Fatigue:    npc.Needs.Fatigue,
-				Loneliness: npc.Needs.Loneliness,
-			},
-			NeedsWeight: adminNpcNeedWeightDTO{
-				Hunger:     npc.NeedsWeight.Hunger,
-				Fatigue:    npc.NeedsWeight.Fatigue,
-				Loneliness: npc.NeedsWeight.Loneliness,
-				Schedule:   npc.NeedsWeight.Schedule,
-			},
-			Schedule: schedule,
-		})
-		if config.Log.CommandRouting {
-			slog.Debug("admin consultou NPC completo", "id", payload.ID)
-		}
-
-	// COMANDO GET SNAP
+		r.handleGetNpcFull(cmd)
 	case "admin_get_snapshot":
-		snapshot := r.snapManager.GetSnapshot()
-		if snapshot == nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
-			return
-		}
-		r.notifier.Send("command", "admin_get_snapshot", snapshot)
-		if config.Log.CommandRouting {
-			slog.Debug("admin consultou snapshot", "tick", snapshot.Tick, "gameTime", snapshot.GetGameTime())
-		}
-
+		r.handleGetSnapshot()
 	case "admin_get_npc_scores":
-		var payload struct {
-			ID string `json:"id"`
-		}
-
-		if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
-			return
-		}
-
-		snapshot := r.snapManager.GetSnapshot()
-		if snapshot == nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
-			return
-		}
-
-		scores := snapshot.GetNpcScores(payload.ID)
-		if scores == nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "npc scores not found", "id": payload.ID})
-			return
-		}
-
-		r.notifier.Send("command", "admin_get_npc_scores", scores)
-		if config.Log.CommandRouting {
-			slog.Debug("admin consultou scores do NPC", "id", payload.ID)
-		}
-
+		r.handleGetNpcScores(cmd)
 	case "admin_get_pois_in_block":
-		var payload struct {
-			BlockID string `json:"block_id"`
-		}
-
-		if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
-			return
-		}
-
-		snapshot := r.snapManager.GetSnapshot()
-		if snapshot == nil {
-			r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
-			return
-		}
-
-		block, found := snapshot.GetBlockById(payload.BlockID)
-		if !found {
-			r.notifier.Send("command", "error", map[string]string{"error": "block not found", "id": payload.BlockID})
-			return
-		}
-
-		poiCounts := snapshot.GetPoiCountsInBlock(payload.BlockID)
-		r.notifier.Send("command", "admin_get_pois_in_block", map[string]interface{}{
-			"block_id":   block.Id,
-			"block_name": block.Name,
-			"pois":       poiCounts,
-		})
-		if config.Log.CommandRouting {
-			slog.Debug("admin consultou POIs do bloco", "block_id", payload.BlockID)
-		}
+		r.handleGetPoisInBlock(cmd)
 
 	default:
 		r.notifier.Send("command", "error", map[string]string{
@@ -215,6 +56,170 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 			"command": cmd.Message.Type,
 			"hint":    "Verifique a documentação da API Admin",
 		})
+	}
+}
 
+func (r *AdminRouter) handleGetNpcFull(cmd PlayerCommand) {
+	var payload struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+		return
+	}
+
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+
+	npc, found := snap.GetNPCById(payload.ID)
+	if !found {
+		r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
+		return
+	}
+
+	type scheduleActionDTO struct {
+		Activity  string `json:"activity"`
+		PoiId     string `json:"poiId"`
+		StartHour int    `json:"startHour"`
+		EndHour   int    `json:"endHour"`
+	}
+	type needDTO struct {
+		Hunger     float64 `json:"hunger"`
+		Fatigue    float64 `json:"fatigue"`
+		Loneliness float64 `json:"loneliness"`
+	}
+	type needWeightDTO struct {
+		Hunger     float64 `json:"hunger"`
+		Fatigue    float64 `json:"fatigue"`
+		Loneliness float64 `json:"loneliness"`
+		Schedule   float64 `json:"schedule"`
+	}
+	type npcFullDTO struct {
+		ID              string            `json:"id"`
+		Name            string            `json:"name"`
+		Role            string            `json:"role"`
+		CurrentBlock    string            `json:"currentBlock"`
+		CurrentPoi      string            `json:"currentPoi"`
+		CurrentActivity string            `json:"currentActivity"`
+		Description     string            `json:"description"`
+		Backstory       string            `json:"backstory"`
+		HomePoi         string            `json:"homePoi"`
+		EatingPoi       string            `json:"eatingPoi"`
+		Needs           needDTO           `json:"needs"`
+		NeedsWeight     needWeightDTO     `json:"needsWeight"`
+		Schedule        []scheduleActionDTO `json:"schedule"`
+	}
+
+	schedule := make([]scheduleActionDTO, 0, len(npc.Schedule))
+	for _, action := range npc.Schedule {
+		schedule = append(schedule, scheduleActionDTO{
+			Activity:  string(action.Activity),
+			PoiId:     action.PoiId,
+			StartHour: action.StartHour,
+			EndHour:   action.EndHour,
+		})
+	}
+
+	r.notifier.Send("command", "admin_get_npc_full", npcFullDTO{
+		ID:              npc.Id,
+		Name:            npc.Name,
+		Role:            string(npc.Role),
+		CurrentBlock:    npc.CurrentBlock,
+		CurrentPoi:      npc.CurrentPoi,
+		CurrentActivity: string(npc.CurrentActivity),
+		Description:     npc.Description,
+		Backstory:       npc.Backstory,
+		HomePoi:         npc.HomePoi,
+		EatingPoi:       npc.EatingPoi,
+		Needs: needDTO{
+			Hunger:     npc.Needs.Hunger,
+			Fatigue:    npc.Needs.Fatigue,
+			Loneliness: npc.Needs.Loneliness,
+		},
+		NeedsWeight: needWeightDTO{
+			Hunger:     npc.NeedsWeight.Hunger,
+			Fatigue:    npc.NeedsWeight.Fatigue,
+			Loneliness: npc.NeedsWeight.Loneliness,
+			Schedule:   npc.NeedsWeight.Schedule,
+		},
+		Schedule: schedule,
+	})
+
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou NPC completo", "id", payload.ID)
+	}
+}
+
+func (r *AdminRouter) handleGetSnapshot() {
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+	r.notifier.Send("command", "admin_get_snapshot", snap)
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou snapshot", "tick", snap.Tick, "gameTime", snap.GetGameTime())
+	}
+}
+
+func (r *AdminRouter) handleGetNpcScores(cmd PlayerCommand) {
+	var payload struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+		return
+	}
+
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+
+	scores := snap.GetNpcScores(payload.ID)
+	if scores == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "npc scores not found", "id": payload.ID})
+		return
+	}
+
+	r.notifier.Send("command", "admin_get_npc_scores", scores)
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou scores do NPC", "id", payload.ID)
+	}
+}
+
+func (r *AdminRouter) handleGetPoisInBlock(cmd PlayerCommand) {
+	var payload struct {
+		BlockID string `json:"block_id"`
+	}
+	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+		return
+	}
+
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+
+	block, found := snap.GetBlockById(payload.BlockID)
+	if !found {
+		r.notifier.Send("command", "error", map[string]string{"error": "block not found", "id": payload.BlockID})
+		return
+	}
+
+	poiCounts := snap.GetPoiCountsInBlock(payload.BlockID)
+	r.notifier.Send("command", "admin_get_pois_in_block", map[string]interface{}{
+		"block_id":   block.Id,
+		"block_name": block.Name,
+		"pois":       poiCounts,
+	})
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou POIs do bloco", "block_id", payload.BlockID)
 	}
 }
