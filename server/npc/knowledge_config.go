@@ -49,20 +49,19 @@ func LoadKnowledgeConfig() (KnowledgeConfig, error) {
 
 	// verificar se valores é 0 ou negativo causar um os.Exit, pois não faz sentido ter valores negativos ou 0 para essas configurações
 	if config.GossipCooldownHours <= 0 {
-		slog.Error("Valor inválido para gossipCooldownHours", "value", config.GossipCooldownHours)
-		return KnowledgeConfig{}, err
+		return KnowledgeConfig{}, fmt.Errorf("gossipCooldownHours inválido: %d", config.GossipCooldownHours)
 	}
 	if config.MaxKnowledgeBaseSize <= 0 {
-		slog.Error("Valor inválido para maxKnowledgeBaseSize", "value", config.MaxKnowledgeBaseSize)
-		return KnowledgeConfig{}, err
+		return KnowledgeConfig{}, fmt.Errorf("maxKnowledgeBaseSize inválido: %d", config.MaxKnowledgeBaseSize)
 	}
 	if config.GossipMinExchangePerEvent <= 0 {
-		slog.Error("Valor inválido para gossipMinExchangePerEvent", "value", config.GossipMinExchangePerEvent)
-		return KnowledgeConfig{}, err
+		return KnowledgeConfig{}, fmt.Errorf("gossipMinExchangePerEvent inválido: %d", config.GossipMinExchangePerEvent)
 	}
 	if config.GossipMaxExchangePerEvent <= 0 {
-		slog.Error("Valor inválido para gossipMaxExchangePerEvent", "value", config.GossipMaxExchangePerEvent)
-		return KnowledgeConfig{}, err
+		return KnowledgeConfig{}, fmt.Errorf("gossipMaxExchangePerEvent inválido: %d", config.GossipMaxExchangePerEvent)
+	}
+	if config.GossipMaxExchangePerEvent < config.GossipMinExchangePerEvent {
+		return KnowledgeConfig{}, fmt.Errorf("gossipMaxExchangePerEvent (%d) menor que min (%d)", config.GossipMaxExchangePerEvent, config.GossipMinExchangePerEvent)
 	}
 
 	// Verificar se os tipos de conhecimento possuem um valor de expiração definido
