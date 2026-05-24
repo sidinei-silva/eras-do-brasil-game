@@ -52,6 +52,8 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		r.handleGetPoisInBlock(cmd)
 	case "admin_get_npc_knowledge":
 		r.handleGetNpcKnowledge(cmd)
+	case "admin_get_npc_active_knowledge":
+		r.handleGetNpcActiveKnowledge(cmd)
 
 	default:
 		r.notifier.Send("command", "error", map[string]string{
@@ -232,8 +234,6 @@ func (r *AdminRouter) handleGetNpcKnowledge(cmd PlayerCommand) {
 		ID string `json:"id"`
 	}
 
-	knowledgeConfig := r.npcManager.GetKnowledgeConfig()
-
 	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
 		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
 		return
@@ -245,13 +245,45 @@ func (r *AdminRouter) handleGetNpcKnowledge(cmd PlayerCommand) {
 		return
 	}
 
-	npc, found := snap.GetNPCById(payload.ID)
-	if !found {
-		r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
+	knowledge, err := snap.GetNPCKnowledge(payload.ID)
+
+	if err != nil {
+		slog.Error("Aconteceu um erro ao buscar snap.GetNpcActiveKnowledge", "error", err)
+		r.notifier.Send("command", "error", map[string]string{"error": err.Error()})
+	}
+
+	r.notifier.Send("command", "admin_get_npc_knowledge", knowledge)
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou conhecimento do NPC", "id", payload.ID, "returned", knowledge)
+	}
+
+}
+
+func (r *AdminRouter) handleGetNpcActiveKnowledge(cmd PlayerCommand) {
+	var payload struct {
+		ID string `json:"id"`
+	}
+
+	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
 		return
 	}
 
-	knowledge := npc.GetActiveKnowledge(snap.GameTime.Time, knowledgeConfig)
+	knowledgeConfig := r.npcManager.GetKnowledgeConfig()
+
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+
+	knowledge, err := snap.GetNpcActiveKnowledge(payload.ID, knowledgeConfig)
+
+	if err != nil {
+		slog.Error("Aconteceu um erro ao buscar snap.GetNpcActiveKnowledge", "error", err)
+		r.notifier.Send("command", "error", map[string]string{"error": err.Error()})
+
+	}
 
 	r.notifier.Send("command", "admin_get_npc_knowledge", knowledge)
 	if config.Log.CommandRouting {

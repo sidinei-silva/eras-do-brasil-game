@@ -1,6 +1,7 @@
 package snapshot
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/npc"
@@ -126,4 +127,27 @@ func (s *Snapshot) GetPoiCountsInBlock(blockId string) []map[string]interface{} 
 	})
 
 	return result
+}
+
+func (s *Snapshot) GetNPCKnowledge(npcId string) ([]npc.Knowledge, error) {
+	npc, found := s.GetNPCById(npcId)
+
+	if !found {
+		return nil, fmt.Errorf("Npc %s not found", npcId)
+	}
+
+	knowledge := npc.KnowledgeBase
+	return knowledge, nil
+}
+
+func (s *Snapshot) GetNpcActiveKnowledge(npcId string, knowledgeConfig npc.KnowledgeConfig) ([]npc.Knowledge, error) {
+	npc, found := s.GetNPCById(npcId)
+
+	if !found {
+		return nil, fmt.Errorf("Npc %s not found", npcId)
+	}
+
+	knowledge := npc.GetActiveKnowledge(s.GameTime.Time, knowledgeConfig)
+
+	return knowledge, nil
 }
