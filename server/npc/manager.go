@@ -61,7 +61,7 @@ func (m *Manager) tickNpcKnowledge(npc *Npc, gameTime world.GameTime, npcsInZone
 	npc.removeExpiredKnowledge(gameTime.Time, m.knowledgeConfig.ExpirationHours)
 	for _, otherNpc := range npcsInZone {
 		knowledge := NewKnowledgeAvistamentoNPC(otherNpc.Id, otherNpc.CurrentBlock, otherNpc.CurrentPoi, "direct", gameTime.Time)
-		npc.addOrUpdateKnowledge(knowledge, gameTime.Time)
+		npc.addOrUpdateKnowledge(knowledge, gameTime.Time, m.knowledgeConfig)
 	}
 }
 

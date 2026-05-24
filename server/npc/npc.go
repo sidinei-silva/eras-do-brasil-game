@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
@@ -78,7 +79,7 @@ func (npc *Npc) hasValidPoi(poiId string) bool {
 }
 
 // addOrUpdateKnowledge adiciona um novo conhecimento à base de conhecimento do NPC ou atualiza um conhecimento existente se já houver um correspondente
-func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge, gameTime time.Time) {
+func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge, gameTime time.Time, knowledgeConfig KnowledgeConfig) {
 	// Verifica se já existe um conhecimento correspondente na base de conhecimento
 	if config.Log.NPCKnowledge {
 		slog.Debug("Verificando se conhecimento existe no NPC", "npc_id", npc.Id, "knowledge", newKnowledge)
@@ -93,6 +94,35 @@ func (npc *Npc) addOrUpdateKnowledge(newKnowledge Knowledge, gameTime time.Time)
 			}
 			return
 		}
+	}
+
+	// Ordenar porLearnedAt ascendente priorizando conhecimentos importantes
+	slices.SortFunc(npc.KnowledgeBase, func(a, b Knowledge) int {
+		if a.Important && !b.Important {
+			return -1
+		}
+		if !a.Important && b.Important {
+			return 1
+		}
+		return a.LearnedAt.Compare(b.LearnedAt)
+	})
+
+	// Verificando tamanho da base de conhecimento antes de adicionar novo conhecimento
+	if len(npc.KnowledgeBase) >= knowledgeConfig.MaxKnowledgeBaseSize {
+		lastKnowledge := npc.KnowledgeBase[len(npc.KnowledgeBase)-1]
+		if lastKnowledge.Important {
+			if config.Log.NPCKnowledge {
+				slog.Warn("Base de conhecimento do NPC atingiu o limite máximo, não adicionando novo conhecimento", "npc_id", npc.Id, "current_knowledge_count", len(npc.KnowledgeBase), "max_knowledge", knowledgeConfig.MaxKnowledgeBaseSize)
+			}
+			return
+		} else {
+			// Remove o conhecimento menos prioritário (último da lista ordenada)
+			npc.KnowledgeBase = npc.KnowledgeBase[:len(npc.KnowledgeBase)-1]
+			if config.Log.NPCKnowledge {
+				slog.Debug("Base de conhecimento do NPC atingiu o limite máximo, removendo conhecimento menos prioritário", "npc_id", npc.Id, "removed_knowledge", lastKnowledge)
+			}
+		}
+
 	}
 	// Adiciona novo conhecimento
 	npc.KnowledgeBase = append(npc.KnowledgeBase, newKnowledge)
