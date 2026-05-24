@@ -247,3 +247,7 @@ func (m *Manager) getNpcsInLocation(blockId string, poi string, npcId string) []
 	}
 	return npcs
 }
+
+func (m *Manager) GetKnowledgeConfig() KnowledgeConfig {
+	return m.knowledgeConfig
+}

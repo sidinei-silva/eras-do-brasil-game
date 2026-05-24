@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
+	"github.com/sidinei-silva/eras-do-brasil-game/server/npc"
 	"github.com/sidinei-silva/eras-do-brasil-game/server/snapshot"
 )
 
@@ -17,12 +18,12 @@ type AdminRouter struct {
 	gameQueue   *CommandQueue
 	notifier    AdminNotifier
 	snapManager *snapshot.Manager // Injetar para acessar o snapshot mais recente e garantir consistência com o que o admin vê no cliente.
-	// npcManager *npc.Manager // Injetar quando precisar de consultas imediatas no mundo
+	npcManager  *npc.Manager      // Injetar quando precisar de consultas imediatas no mundo
 }
 
 // NewAdminRouter cria o roteador e injeta a fila do motor do jogo
-func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier, snapManager *snapshot.Manager) *AdminRouter {
-	return &AdminRouter{gameQueue: gameQueue, notifier: notifier, snapManager: snapManager}
+func NewAdminRouter(gameQueue *CommandQueue, notifier AdminNotifier, snapManager *snapshot.Manager, npcManager *npc.Manager) *AdminRouter {
+	return &AdminRouter{gameQueue: gameQueue, notifier: notifier, snapManager: snapManager, npcManager: npcManager}
 }
 
 // Route é chamado pelo readPump da sessão admin
@@ -49,6 +50,8 @@ func (r *AdminRouter) Route(cmd PlayerCommand) {
 		r.handleGetNpcScores(cmd)
 	case "admin_get_pois_in_block":
 		r.handleGetPoisInBlock(cmd)
+	case "admin_get_npc_knowledge":
+		r.handleGetNpcKnowledge(cmd)
 
 	default:
 		r.notifier.Send("command", "error", map[string]string{
@@ -98,18 +101,18 @@ func (r *AdminRouter) handleGetNpcFull(cmd PlayerCommand) {
 		Schedule   float64 `json:"schedule"`
 	}
 	type npcFullDTO struct {
-		ID              string            `json:"id"`
-		Name            string            `json:"name"`
-		Role            string            `json:"role"`
-		CurrentBlock    string            `json:"currentBlock"`
-		CurrentPoi      string            `json:"currentPoi"`
-		CurrentActivity string            `json:"currentActivity"`
-		Description     string            `json:"description"`
-		Backstory       string            `json:"backstory"`
-		HomePoi         string            `json:"homePoi"`
-		EatingPoi       string            `json:"eatingPoi"`
-		Needs           needDTO           `json:"needs"`
-		NeedsWeight     needWeightDTO     `json:"needsWeight"`
+		ID              string              `json:"id"`
+		Name            string              `json:"name"`
+		Role            string              `json:"role"`
+		CurrentBlock    string              `json:"currentBlock"`
+		CurrentPoi      string              `json:"currentPoi"`
+		CurrentActivity string              `json:"currentActivity"`
+		Description     string              `json:"description"`
+		Backstory       string              `json:"backstory"`
+		HomePoi         string              `json:"homePoi"`
+		EatingPoi       string              `json:"eatingPoi"`
+		Needs           needDTO             `json:"needs"`
+		NeedsWeight     needWeightDTO       `json:"needsWeight"`
 		Schedule        []scheduleActionDTO `json:"schedule"`
 	}
 
@@ -222,4 +225,37 @@ func (r *AdminRouter) handleGetPoisInBlock(cmd PlayerCommand) {
 	if config.Log.CommandRouting {
 		slog.Debug("admin consultou POIs do bloco", "block_id", payload.BlockID)
 	}
+}
+
+func (r *AdminRouter) handleGetNpcKnowledge(cmd PlayerCommand) {
+	var payload struct {
+		ID string `json:"id"`
+	}
+
+	knowledgeConfig := r.npcManager.GetKnowledgeConfig()
+
+	if err := json.Unmarshal(cmd.Message.Payload, &payload); err != nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "invalid payload"})
+		return
+	}
+
+	snap := r.snapManager.GetSnapshot()
+	if snap == nil {
+		r.notifier.Send("command", "error", map[string]string{"error": "snapshot not available"})
+		return
+	}
+
+	npc, found := snap.GetNPCById(payload.ID)
+	if !found {
+		r.notifier.Send("command", "error", map[string]string{"error": "npc not found", "id": payload.ID})
+		return
+	}
+
+	knowledge := npc.GetActiveKnowledge(snap.GameTime.Time, knowledgeConfig)
+
+	r.notifier.Send("command", "admin_get_npc_knowledge", knowledge)
+	if config.Log.CommandRouting {
+		slog.Debug("admin consultou conhecimento do NPC", "id", payload.ID, "returned", knowledge)
+	}
+
 }

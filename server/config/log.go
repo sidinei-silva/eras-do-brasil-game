@@ -49,7 +49,7 @@ var Log = &LogConfig{
 	Level:          getEnv("LOG_LEVEL", "info"),
 	NPCNeeds:       getEnvBool("LOG_NPC_NEEDS", false),
 	NPCSchedule:    getEnvBool("LOG_NPC_SCHEDULE", false),
-	CommandRouting: getEnvBool("LOG_COMMAND_ROUTING", false),
+	CommandRouting: getEnvBool("LOG_COMMAND_ROUTING", true),
 	GameLoopTicks:  getEnvBool("LOG_GAME_LOOP_TICKS", false),
 	WorldLoading:   getEnvBool("LOG_WORLD_LOADING", false),
 	NPCBehavior:    getEnvBool("LOG_NPC_BEHAVIOR", false),

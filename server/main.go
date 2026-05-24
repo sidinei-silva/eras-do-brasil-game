@@ -63,9 +63,15 @@ func main() {
 
 	snapManager := snapshot.NewManager()
 
+	npcManager, npcErr := npc.NewManager()
+	if npcErr != nil {
+		slog.Error("Erro ao criar NPC Manager:", "npcErr", npcErr)
+		os.Exit(1)
+	}
+
 	// Roteadores
 	playerRouter := command.NewPlayerRouter(cmdQueue)
-	adminRouter := command.NewAdminRouter(cmdQueue, adminHub, snapManager)
+	adminRouter := command.NewAdminRouter(cmdQueue, adminHub, snapManager, npcManager)
 
 	//Injeta o Router no Hub
 	adminHub.SetRouter(adminRouter)
@@ -84,12 +90,6 @@ func main() {
 	slog.Info("Game Time inicializado", "gameTime", worldManager.GameTime())
 	blocks := worldManager.GetAllBlocks()
 	slog.Info("Blocos carregados no World Manager", "count", len(blocks))
-
-	npcManager, npcErr := npc.NewManager()
-	if npcErr != nil {
-		slog.Error("Erro ao criar NPC Manager:", "npcErr", npcErr)
-		os.Exit(1)
-	}
 
 	npcs := npcManager.GetAllNpcs()
 	slog.Info("NPCs carregados no NPC Manager", "count", len(npcs))

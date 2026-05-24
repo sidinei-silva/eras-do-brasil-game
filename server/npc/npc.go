@@ -3,6 +3,7 @@ package npc
 import (
 	"log/slog"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/sidinei-silva/eras-do-brasil-game/server/config"
@@ -233,4 +234,25 @@ func (npc *Npc) exchangeKnowledgeWith(otherNpc *Npc, gameTime time.Time, knowled
 	otherNpc.LastGossipedWith[npc.Id] = gameTime
 
 	return true
+}
+
+func (npc *Npc) GetActiveKnowledge(gameTime time.Time, knowledgeConfig KnowledgeConfig) []Knowledge {
+	active := make([]Knowledge, 0, len(npc.KnowledgeBase))
+	notActive := make([]Knowledge, 0, len(npc.KnowledgeBase))
+	slog.Debug("Obtendo conhecimento ativo do NPC", "npc_id", npc.Id, "total_knowledge", len(npc.KnowledgeBase))
+	for _, k := range npc.KnowledgeBase {
+		expiration, exists := knowledgeConfig.ExpirationHours[k.Type]
+		if !exists {
+			slog.Error("Sem config de expiração para conhecimento", "knowledge_type", k.Type)
+			os.Exit(1)
+		}
+
+		if gameTime.Sub(k.LastSeenAt) <= time.Duration(expiration)*time.Hour {
+			active = append(active, k)
+		} else {
+			notActive = append(notActive, k)
+		}
+	}
+
+	return active
 }
